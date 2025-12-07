@@ -106,4 +106,10 @@
     <string name="delete_location">确定要删除 %1$s 位置信息？</string>
     <string name="donate_list">捐赠名单</string>
     <string name="thanks">鸣谢</string>
+    <string name="select_date">选择时间范围</string>
+    <string name="start_time">开始时间:</string>
+    <string name="input_correct_date">请输入有效日期(YYYYMMDD)</string>
+    <string name="date_not_correct">日期格式不正确，应为8位数字</string>
+    <string name="end_date">结束时间:</string>
+    <string name="date_range">时间区间</string>
 </resources>

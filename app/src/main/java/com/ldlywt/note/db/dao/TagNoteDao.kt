@@ -90,4 +90,8 @@ interface TagNoteDao {
     @Transaction
     @Query("SELECT * FROM Note WHERE strftime('%Y', datetime(create_time/1000, 'unixepoch')) = :year")
     fun getNotesByYear(year: String): Flow<List<NoteShowBean>>
+
+    @Query("SELECT * FROM note WHERE create_time BETWEEN :startTime AND :endTime AND is_deleted = 0 ORDER BY create_time DESC")
+    fun getNotesByCreateTimeRange(startTime: Long, endTime: Long): Flow<List<NoteShowBean>>
+
 }

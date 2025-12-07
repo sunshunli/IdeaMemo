@@ -25,6 +25,9 @@ sealed class Screen {
     data class YearDetail(val year: String) : Screen()
 
     @Serializable
+    data class DateRangePage(val startTime: Long, val endTime: Long) : Screen()
+
+    @Serializable
     data class LocationDetail(val location: String) : Screen()
 
     @Serializable

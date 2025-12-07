@@ -108,4 +108,10 @@
     <string name="delete_location">Are you sure you want to delete %1$s location info?</string>
     <string name="donate_list">Donate List</string>
     <string name="thanks">Thanks</string>
+    <string name="select_date">Select Date Range</string>
+    <string name="start_time">Start Time:</string>
+    <string name="input_correct_date">Please enter a valid date (YYYYMMDD)</string>
+    <string name="date_not_correct">Date format is incorrect, should be 8 digits</string>
+    <string name="end_date">End Time:</string>
+    <string name="date_range">Date Range</string>
 </resources>

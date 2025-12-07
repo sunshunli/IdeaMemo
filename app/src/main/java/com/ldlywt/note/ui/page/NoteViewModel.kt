@@ -127,6 +127,7 @@ class NoteViewModel @Inject constructor(private val tagNoteRepo: TagNoteRepo) : 
     }
 
     fun getNotesByYear(year: String): Flow<List<NoteShowBean>> = tagNoteRepo.getNotesByYear(year)
+    fun getNotesByCreateTimeRange(startTime: Long, endTime: Long): Flow<List<NoteShowBean>> = tagNoteRepo.getNotesByCreateTimeRange(startTime, endTime)
 
     fun getAllLocationInfo(): Flow<List<String>> = tagNoteRepo.getAllLocationInfo()
 

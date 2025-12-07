@@ -1,6 +1,8 @@
 package com.ldlywt.note.ui.page.home
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,20 +12,28 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,7 +66,10 @@ import com.ldlywt.note.utils.str
 import com.moriafly.salt.ui.SaltTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
 
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @Composable
 fun AllNotesPage(
     navController: NavHostController,
@@ -66,6 +79,7 @@ fun AllNotesPage(
     var openFilterBottomSheet by rememberSaveable { mutableStateOf(false) }
     var showWarnDialog by rememberSaveable { mutableStateOf(false) }
     var showInputDialog by rememberSaveable { mutableStateOf(false) }
+    var showCustomTimePicker by rememberSaveable { mutableStateOf(false) }
     val maxLine by SettingsPreferences.cardMaxLine.collectAsState(SettingsPreferences.CardMaxLineMode.MAX_LINE)
     LaunchedEffect(Unit) {
         showWarnDialog = SettingsPreferences.firstLaunch.first()
@@ -74,9 +88,11 @@ fun AllNotesPage(
     RYScaffold(
         title = R.string.all_note.str, navController = null,
         actions = {
-            toolbar(navController) {
+            toolbar(navController, filterBlock = {
                 openFilterBottomSheet = true
-            }
+            }, dateRangeBlock = {
+                showCustomTimePicker = true
+            })
         },
         floatingActionButton = {
             if (!showInputDialog) {
@@ -115,7 +131,7 @@ fun AllNotesPage(
             ChatInputDialog(
                 isShow = showInputDialog,
                 modifier =
-                Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+                    Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
             ) {
                 hideBottomNavBar.invoke(false)
                 showInputDialog = false
@@ -138,11 +154,34 @@ fun AllNotesPage(
         }
     }
 
+    // 添加自定义时间选择对话框
+    if (showCustomTimePicker) {
+        CustomTimePickerDialog(
+            onDismissRequest = { showCustomTimePicker = false },
+            onConfirm = { startTime, endTime ->
+                lunchMain {
+                    navController.navigate(Screen.DateRangePage(startTime = startTime, endTime = endTime))
+                }
+                showCustomTimePicker = false
+            }
+        )
+    }
 
 }
 
 @Composable
-private fun toolbar(navController: NavHostController, filterBlock: () -> Unit) {
+private fun toolbar(navController: NavHostController, filterBlock: () -> Unit, dateRangeBlock: () -> Unit) {
+    IconButton(
+        onClick = {
+            dateRangeBlock()
+        }
+    ) {
+        Icon(
+            contentDescription = R.string.location_info.str,
+            imageVector = Icons.Outlined.DateRange,
+            tint = SaltTheme.colors.text
+        )
+    }
     IconButton(
         onClick = {
             navController.navigate(route = Screen.LocationList) {
@@ -193,6 +232,7 @@ private fun toolbar(navController: NavHostController, filterBlock: () -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeFilterBottomSheet(show: Boolean, onDismissRequest: () -> Unit) {
@@ -202,7 +242,7 @@ fun HomeFilterBottomSheet(show: Boolean, onDismissRequest: () -> Unit) {
     val sheetState = rememberModalBottomSheetState()
 
     if (show) {
-        ModalBottomSheet(onDismissRequest = onDismissRequest , sheetState = sheetState) {
+        ModalBottomSheet(onDismissRequest = onDismissRequest, sheetState = sheetState) {
             Column(Modifier.fillMaxWidth()) {
                 TextButton(modifier = Modifier.fillMaxWidth(), onClick = {
                     scope.launch {
@@ -276,4 +316,115 @@ fun HomeFilterBottomSheet(show: Boolean, onDismissRequest: () -> Unit) {
             }
         }
     }
+}
+
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomTimePickerDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: (Long, Long) -> Unit
+) {
+    var startDateText by rememberSaveable { mutableStateOf("") }
+    var endDateText by rememberSaveable { mutableStateOf("") }
+    var startDateError by rememberSaveable { mutableStateOf(false) }
+    var endDateError by rememberSaveable { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.select_date)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                Text(stringResource(R.string.start_time))
+                TextField(
+                    value = startDateText,
+                    onValueChange = {
+                        startDateText = it
+                        startDateError = false
+                    },
+                    placeholder = { Text("20250101") },
+                    isError = startDateError,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (startDateError) {
+                    Text(
+                        text = stringResource(R.string.input_correct_date),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(stringResource(R.string.end_date))
+                TextField(
+                    value = endDateText,
+                    onValueChange = {
+                        endDateText = it
+                        endDateError = false
+                    },
+                    placeholder = { Text("20250909") },
+                    isError = endDateError,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (endDateError) {
+                    Text(
+                        text = stringResource(R.string.input_correct_date),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                // 验证并解析日期
+                try {
+                    val startDate = parseCompactDate(startDateText)
+                    val endDate = parseCompactDate(endDateText)
+
+                    val startMillis = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    val endMillis = endDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    onConfirm(startMillis, endMillis)
+                } catch (e: Exception) {
+                    startDateError = startDateText.isNotEmpty() && !isValidCompactDate(startDateText)
+                    endDateError = endDateText.isNotEmpty() && !isValidCompactDate(endDateText)
+                }
+            }) {
+                Text(R.string.sure.str)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(R.string.cancel.str)
+            }
+        }
+    )
+}
+
+// 辅助函数验证日期格式 YYYYMMDD
+private fun isValidCompactDate(dateString: String): Boolean {
+    return try {
+        parseCompactDate(dateString)
+        true
+    } catch (e: Exception) {
+        false
+    }
+}
+
+// 解析 YYYYMMDD 格式的日期字符串
+private fun parseCompactDate(dateString: String): LocalDate {
+    if (dateString.length != 8) {
+        throw IllegalArgumentException(R.string.date_not_correct.str)
+    }
+
+    val year = dateString.substring(0, 4).toInt()
+    val month = dateString.substring(4, 6).toInt()
+    val day = dateString.substring(6, 8).toInt()
+
+    return LocalDate.of(year, month, day)
 }

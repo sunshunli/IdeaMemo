@@ -122,6 +122,9 @@ class TagNoteRepo(
 
     fun getNotesByYear(year: String): Flow<List<NoteShowBean>> = tagNoteDao.getNotesByYear(year)
 
+    fun getNotesByCreateTimeRange(startTime: Long, endTime: Long): Flow<List<NoteShowBean>> = tagNoteDao.getNotesByCreateTimeRange(startTime, endTime)
+
+
     fun getAllLocationInfo(): Flow<List<String>> = noteDao.getAllLocationInfo()
 
     fun getNotesByLocationInfo(targetInfo: String): Flow<List<NoteShowBean>> = noteDao.getNotesByLocationInfo(targetInfo)

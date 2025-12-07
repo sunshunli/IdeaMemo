@@ -28,6 +28,7 @@ import com.ldlywt.note.ui.page.settings.ExplorePage
 import com.ldlywt.note.ui.page.settings.GalleryPage
 import com.ldlywt.note.ui.page.settings.MoreInfoPage
 import com.ldlywt.note.ui.page.share.SharePage
+import com.ldlywt.note.ui.page.tag.DateRangePage
 import com.ldlywt.note.ui.page.tag.LocationDetailPage
 import com.ldlywt.note.ui.page.tag.LocationListPage
 import com.ldlywt.note.ui.page.tag.TagDetailPage
@@ -153,6 +154,11 @@ fun NavHostContainer(
         composable<Screen.YearDetail> { navBackStackEntry ->
             val args = navBackStackEntry.toRoute<Screen.YearDetail>()
             YearDetailPage(year = args.year, navController = navController)
+        }
+
+        composable<Screen.DateRangePage> { navBackStackEntry ->
+            val args = navBackStackEntry.toRoute<Screen.DateRangePage>()
+            DateRangePage(startTime = args.startTime, endTime = args.endTime, navController = navController)
         }
 
         composable<Screen.LocationDetail> { navBackStackEntry ->
