@@ -30,7 +30,6 @@ import com.ldlywt.note.ui.page.settings.MoreInfoPage
 import com.ldlywt.note.ui.page.share.SharePage
 import com.ldlywt.note.ui.page.tag.DateRangePage
 import com.ldlywt.note.ui.page.tag.LocationDetailPage
-import com.ldlywt.note.ui.page.tag.LocationListPage
 import com.ldlywt.note.ui.page.tag.TagDetailPage
 import com.ldlywt.note.ui.page.tag.TagListPage
 import com.ldlywt.note.ui.page.tag.YearDetailPage
@@ -139,9 +138,9 @@ fun NavHostContainer(
         composable<Screen.DataCloudConfig> {
             DataCloudConfigPage(navController = navController)
         }
-        composable<Screen.LocationList> {
-            LocationListPage(navHostController = navController)
-        }
+//        composable<Screen.LocationList> {
+//            LocationListPage(navHostController = navController)
+//        }
         composable<Screen.MoreInfo> {
             MoreInfoPage(navController = navController)
         }

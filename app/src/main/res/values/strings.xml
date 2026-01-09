@@ -83,7 +83,7 @@
     <string name="location">Location</string>
     <string name="location_info">Location</string>
     <string name="warm_reminder">Reminder</string>
-    <string name="warm_reminder_desc">Distinguish tags with # plus spaces.\n\nThe text after the last @, will automatically generate the address.\n\nExample:\n #Life Less is more. @New York City</string>
+    <string name="warm_reminder_desc">Distinguish tags with # plus spaces.\n\nExample:\n #Life Less is more.</string>
     <string name="biometric">Biometric</string>
     <string name="webdav_auth">WebDav Auth</string>
     <string name="biometric_authentication">Biometric Authentication</string>

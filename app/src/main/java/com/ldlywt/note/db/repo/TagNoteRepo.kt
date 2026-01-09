@@ -14,6 +14,7 @@ import com.ldlywt.note.utils.CityRegexUtils
 import com.ldlywt.note.utils.TopicUtils
 import com.ldlywt.note.ui.page.SortTime
 import kotlinx.coroutines.flow.Flow
+import org.zeroturnaround.zip.FileSource.pair
 
 class TagNoteRepo(
     private val noteDao: NoteDao,
@@ -80,13 +81,13 @@ class TagNoteRepo(
     @Transaction
     fun insertOrUpdate(card: Note) {
         val tagList = TopicUtils.getTopicListByString(card.content)
-        if (card.locationInfo.isNullOrBlank()) {
-            val pair = CityRegexUtils.getCityByString(card.content.trim())
-            card.locationInfo = pair?.second
-            if (card.locationInfo != null) {
-                card.content = pair?.first ?: ""
-            }
-        }
+//        if (card.locationInfo.isNullOrBlank()) {
+//            val pair = CityRegexUtils.getCityByString(card.content.trim())
+//            card.locationInfo = pair?.second
+//            if (card.locationInfo != null) {
+//                card.content = pair?.first ?: ""
+//            }
+//        }
         val noteId = noteDao.insert(card)
         if (tagList.isEmpty()) {
             val tempTag = Tag(tag = "")

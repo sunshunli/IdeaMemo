@@ -41,14 +41,14 @@ class FirstTimeManager @Inject constructor() {
 
     private fun generateChineseIntroduceNoteList() {
         val functionNote = Note(
-            content = "#灵感 \n生活不止眼前的苟且 还有诗和远方。@深圳市",
+            content = "#灵感 \n生活不止眼前的苟且 还有诗和远方。",
         )
         tagNoteRepo.insertOrUpdate(functionNote)
     }
 
     private fun generateEnglishIntroduceNoteList() {
         val functionNote = Note(
-            content = "#Life \nLess is more.@New York City",
+            content = "#Life \nLess is more.",
         )
         tagNoteRepo.insertOrUpdate(functionNote)
     }
@@ -66,7 +66,6 @@ fun FirstTimeWarmDialog(block: () -> Unit) {
             Column {
                 Text(stringResource(id = R.string.warm_reminder_desc), color = SaltTheme.colors.text)
                 Spacer(modifier = androidx.compose.ui.Modifier.height(12.dp))
-
                 Text(
                     stringResource(id = R.string.browse_tos_tips_service),
                     style = MaterialTheme.typography.bodyMedium.copy(

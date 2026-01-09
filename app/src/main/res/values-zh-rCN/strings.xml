@@ -84,7 +84,7 @@
     <string name="location">位置信息</string>
     <string name="warm_reminder">温馨提示</string>
     <string name="location_info">位置信息</string>
-    <string name="warm_reminder_desc">以#加空格区分标签.\n最后一个@后面的文字会自动生成位置信息.\n例如：\n\n #Life Less is more. @深圳市</string>
+    <string name="warm_reminder_desc">以#加空格区分标签.\n\n例如：\n\n #Life Less is more.</string>
     <string name="biometric">指纹安全</string>
     <string name="webdav_auth">WebDav 授权</string>
     <string name="biometric_authentication">指纹验证</string>

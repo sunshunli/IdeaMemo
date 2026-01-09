@@ -24,7 +24,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.outlined.LineStyle
 import androidx.compose.material.icons.outlined.Photo
-import androidx.compose.material.icons.outlined.TipsAndUpdates
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -58,7 +57,6 @@ import com.ldlywt.note.ui.page.main.MainActivity
 import com.ldlywt.note.ui.page.router.Screen
 import com.ldlywt.note.utils.Constant
 import com.ldlywt.note.utils.SettingsPreferences
-import com.ldlywt.note.utils.TipsDialog
 import com.ldlywt.note.utils.lunchIo
 import com.ldlywt.note.utils.str
 import com.ldlywt.note.utils.toYYMMDD
@@ -268,15 +266,15 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
             item {
                 RoundedColumn {
                     ItemTitle(text = stringResource(R.string.other))
-                    Item(
-                        onClick = {
-                            showWarnDialog = true
-                        },
-                        text = stringResource(id = R.string.warm_reminder),
-                        iconPainter = rememberVectorPainter(image = Icons.Outlined.TipsAndUpdates),
-                        iconColor = SaltTheme.colors.text,
-                        iconPaddingValues = PaddingValues(all = 1.5.dp)
-                    )
+//                    Item(
+//                        onClick = {
+//                            showWarnDialog = true
+//                        },
+//                        text = stringResource(id = R.string.warm_reminder),
+//                        iconPainter = rememberVectorPainter(image = Icons.Outlined.TipsAndUpdates),
+//                        iconColor = SaltTheme.colors.text,
+//                        iconPaddingValues = PaddingValues(all = 1.5.dp)
+//                    )
                     Item(
                         onClick = {
                             Constant.startGithubReleaseUrl(context)
@@ -298,9 +296,9 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
             }
         })
 
-    if (showWarnDialog) {
-        TipsDialog(block = { showWarnDialog = false })
-    }
+//    if (showWarnDialog) {
+//        TipsDialog(block = { showWarnDialog = false })
+//    }
 }
 
 @Composable

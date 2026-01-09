@@ -17,7 +17,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AvTimer
 import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.rounded.Edit
@@ -178,19 +177,19 @@ private fun toolbar(navController: NavHostController, filterBlock: () -> Unit, d
             tint = SaltTheme.colors.text
         )
     }
-    IconButton(
-        onClick = {
-            navController.navigate(route = Screen.LocationList) {
-                launchSingleTop = true
-            }
-        }
-    ) {
-        Icon(
-            contentDescription = R.string.location_info.str,
-            imageVector = Icons.Outlined.LocationOn,
-            tint = SaltTheme.colors.text
-        )
-    }
+//    IconButton(
+//        onClick = {
+//            navController.navigate(route = Screen.LocationList) {
+//                launchSingleTop = true
+//            }
+//        }
+//    ) {
+//        Icon(
+//            contentDescription = R.string.location_info.str,
+//            imageVector = Icons.Outlined.LocationOn,
+//            tint = SaltTheme.colors.text
+//        )
+//    }
     IconButton(
         onClick = {
             navController.navigate(route = Screen.TagList) {
@@ -328,6 +327,7 @@ fun CustomTimePickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
+        containerColor = SaltTheme.colors.popup, // 设置容器背景颜色
         title = { Text(stringResource(R.string.select_date)) },
         text = {
             Column(

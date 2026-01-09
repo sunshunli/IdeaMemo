@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddLocation
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.PhotoCamera
@@ -34,7 +33,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -83,12 +81,10 @@ fun ChatInputDialog(
     var text: TextFieldValue by remember { mutableStateOf(TextFieldValue("")) }
     val context = LocalContext.current
     var tagMenuExpanded by remember { mutableStateOf(false) }
-    var locationMenuExpanded by remember { mutableStateOf(false) }
     var photoImageUri by remember { mutableStateOf<Uri?>(null) }
     val tagList = LocalTags.current.filterNot { it.isCityTag }
     val memosViewModel = LocalMemosViewModel.current
     val memoInputViewModel = hiltViewModel<MemoInputViewModel>()
-    val locationInfoList by memosViewModel.getAllLocationInfo().collectAsState(initial = emptyList())
 
     val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
@@ -175,47 +171,6 @@ fun ChatInputDialog(
         }
     }
 
-    @Composable
-    fun LocationButton(locationList: List<String>) {
-        if (locationList.isEmpty()) {
-            PIconButton(
-                imageVector = Icons.Filled.AddLocation,
-                contentDescription = stringResource(R.string.location),
-            ) {
-                text = text.copy(
-                    text.text.replaceRange(text.selection.min, text.selection.max, "@"), TextRange(text.selection.min + 1)
-                )
-            }
-        } else {
-            Box {
-                DropdownMenu(
-                    expanded = locationMenuExpanded, onDismissRequest = { locationMenuExpanded = false }, properties = PopupProperties(focusable = false)
-                ) {
-                    locationList.forEach { txt ->
-                        DropdownMenuItem(
-                            text = { Text(txt) },
-                            onClick = {
-                                val tagText = " @${txt}"
-                                text = text.copy(
-                                    text.text.replaceRange(
-                                        text.selection.min, text.selection.max, tagText
-                                    ), TextRange(text.selection.min + tagText.length)
-                                )
-                                locationMenuExpanded = false
-                            },
-                        )
-                    }
-                }
-                PIconButton(
-                    imageVector = Icons.Filled.AddLocation,
-                    contentDescription = stringResource(R.string.location),
-                ) {
-                    locationMenuExpanded = !locationMenuExpanded
-                }
-            }
-        }
-    }
-
     if (isShow) {
         Box(
             contentAlignment = Alignment.BottomCenter, modifier = Modifier
@@ -271,7 +226,6 @@ fun ChatInputDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     TagButton(tagList)
-                    LocationButton(locationInfoList)
                     PIconButton(
                         imageVector = Icons.Outlined.Image,
                         contentDescription = stringResource(R.string.add_image),
