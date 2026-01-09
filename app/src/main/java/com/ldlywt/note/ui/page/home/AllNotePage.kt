@@ -177,19 +177,6 @@ private fun toolbar(navController: NavHostController, filterBlock: () -> Unit, d
             tint = SaltTheme.colors.text
         )
     }
-//    IconButton(
-//        onClick = {
-//            navController.navigate(route = Screen.LocationList) {
-//                launchSingleTop = true
-//            }
-//        }
-//    ) {
-//        Icon(
-//            contentDescription = R.string.location_info.str,
-//            imageVector = Icons.Outlined.LocationOn,
-//            tint = SaltTheme.colors.text
-//        )
-//    }
     IconButton(
         onClick = {
             navController.navigate(route = Screen.TagList) {

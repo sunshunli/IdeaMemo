@@ -149,7 +149,7 @@ fun AdaptiveNavigationBar(
         }
     } else {
         // 使用 NavigationBar 适配普通屏幕
-        NavigationBar(modifier, containerColor = SaltTheme.colors.subBackground) {
+        NavigationBar(Modifier.height(56.dp), containerColor = SaltTheme.colors.subBackground) {
             destinations.forEachIndexed { index, destination ->
                 val selected = destination.route == currentDestination
                 NavigationBarItem(
@@ -196,7 +196,7 @@ enum class NavigationBarPath(
                 contentDescription = "settings"
             )
         },
-        label = { "Settings"}
+        label = { "Settings" }
     )
 }
 

@@ -1,6 +1,7 @@
 package com.ldlywt.note.ui.page.main
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.displayCutoutPadding
@@ -24,6 +25,7 @@ import com.ldlywt.note.ui.page.home.AllNotesPage
 import com.ldlywt.note.ui.page.home.CalenderPage
 import com.ldlywt.note.ui.page.settings.SettingsPage
 import com.ldlywt.note.utils.isWideScreen
+import com.moriafly.salt.ui.SaltTheme
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -83,7 +85,7 @@ fun MainScreen(navController: NavHostController) {
             )
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().background(SaltTheme.colors.subBackground)) {
             pagerContent(
                 Modifier
                     .fillMaxWidth()
