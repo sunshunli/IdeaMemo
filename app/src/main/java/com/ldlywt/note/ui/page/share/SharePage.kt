@@ -41,6 +41,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -51,9 +52,9 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ldlywt.note.R
+import com.ldlywt.note.bean.Note
 import com.ldlywt.note.bean.NoteShowBean
 import com.ldlywt.note.component.RYScaffold
-import com.ldlywt.note.component.locationAndTimeText
 import com.ldlywt.note.ui.page.LocalMemosViewModel
 import com.ldlywt.note.utils.lunchIo
 import com.ldlywt.note.utils.str
@@ -76,6 +77,8 @@ fun SharePage(noteId: Long, navController: NavHostController) {
     val imagesLoaded = remember { mutableStateOf(true) } // 跟踪图片是否加载完成
     val totalImages = remember { mutableStateOf(0) }
     val loadedImages = remember { mutableStateOf(0) }
+    val bitmap = remember { mutableStateOf<Bitmap?>(null) } // 改为状态变量
+    val isCapturing = remember { mutableStateOf(false) } // 添加截图状态
 
     LaunchedEffect(Unit) {
         lunchIo {
@@ -95,21 +98,45 @@ fun SharePage(noteId: Long, navController: NavHostController) {
     LaunchedEffect(loadedImages.value, totalImages.value) {
         if (loadedImages.value >= totalImages.value && totalImages.value > 0) {
             imagesLoaded.value = true
+            captureView.value?.let { view ->
+                isCapturing.value = true
+                bitmap.value = captureFullView(view, context)
+                isCapturing.value = false
+            }
+        }
+    }
+
+    // 处理没有图片的情况
+    LaunchedEffect(imagesLoaded.value, noteShowBean.value) {
+        if (imagesLoaded.value && totalImages.value == 0 && noteShowBean.value != null && bitmap.value == null && !isCapturing.value) {
+            captureView.value?.let { view ->
+                isCapturing.value = true
+                bitmap.value = captureFullView(view, context)
+                isCapturing.value = false
+            }
         }
     }
 
     RYScaffold(title = R.string.share.str, navController = navController, actions = {
         IconButton(
             onClick = {
-                if (!imagesLoaded.value) {
-                    // 图片还在加载中，可以显示提示或延迟截图
+                if (!imagesLoaded.value || isCapturing.value) {
+                    // 图片还在加载中或正在截图，可以显示提示或延迟截图
                     return@IconButton
                 }
-                captureView.value?.let { view ->
-                    val bitmap = captureFullView(view, context)
-                    bitmap?.let {
-                        shareImage(context, saveBitmapToFile(context, it))
+
+                // 如果bitmap为空，尝试重新生成
+                if (bitmap.value == null) {
+                    captureView.value?.let { view ->
+                        isCapturing.value = true
+                        bitmap.value = captureFullView(view, context)
+                        isCapturing.value = false
                     }
+                }
+
+                // 再次检查bitmap是否可用
+                bitmap.value?.let {
+                    shareImage(context, saveBitmapToFile(context, it))
                 }
             },
             content = {
@@ -125,20 +152,21 @@ fun SharePage(noteId: Long, navController: NavHostController) {
         ) {
             // 使用AndroidView包装内容，以便获取完整尺寸
             AndroidView(factory = {
-                androidx.compose.ui.platform.ComposeView(it).apply {
+                ComposeView(it).apply {
                     // 设置布局参数，确保宽度匹配屏幕
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
                     )
-
                     setContent {
                         noteShowBean.value?.let { noteBean ->
                             Column(modifier = Modifier.background(SaltTheme.colors.background)) {
                                 Spacer(modifier = Modifier.height(20.dp))
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = SaltTheme.colors.popup),
-                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                    modifier = Modifier
+                                        .padding(horizontal = 8.dp)
+                                        .fillMaxWidth()
                                 ) {
                                     Column(
                                         modifier = Modifier
@@ -146,6 +174,12 @@ fun SharePage(noteId: Long, navController: NavHostController) {
                                             .padding(12.dp)
                                     ) {
                                         val note = noteBean.note
+                                        Text(
+                                            modifier = Modifier.padding(start = 2.dp),
+                                            text = note.createTime.toTime(),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
+                                            color = MaterialTheme.colorScheme.outline,
+                                        )
                                         MarkdownText(
                                             markdown = note.content,
                                             style = SaltTheme.textStyles.paragraph.copy(fontSize = 15.sp, lineHeight = 24.sp),
@@ -162,16 +196,15 @@ fun SharePage(noteId: Long, navController: NavHostController) {
                                             )
                                         }
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        locationAndTimeText(note.createTime.toTime(), modifier = Modifier.padding(start = 2.dp))
+
+                                        Box(contentAlignment = Alignment.CenterEnd, modifier = Modifier.fillMaxWidth()) {
+                                            Text(
+                                                text = "By IdeaMemo",
+                                                style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Cursive),
+                                                modifier = Modifier.padding(end = 8.dp)
+                                            )
+                                        }
                                     }
-                                }
-                                Spacer(modifier = Modifier.height(20.dp))
-                                Box(contentAlignment = Alignment.CenterEnd, modifier = Modifier.fillMaxWidth()) {
-                                    Text(
-                                        text = "By IdeaMemo",
-                                        style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Cursive),
-                                        modifier = Modifier.padding(end = 16.dp)
-                                    )
                                 }
                                 Spacer(modifier = Modifier.height(20.dp)) // 增加内部底部间距
                             }
@@ -189,9 +222,8 @@ fun SharePage(noteId: Long, navController: NavHostController) {
 
 // 自定义图片卡片组件，支持图片加载完成通知
 @Composable
-fun CustomImageCard(note: com.ldlywt.note.bean.Note, onImageLoaded: () -> Unit) {
+fun CustomImageCard(note: Note, onImageLoaded: () -> Unit) {
     val context = LocalContext.current
-
     if (note.attachments.size == 1) {
         AsyncImage(
             model = ImageRequest.Builder(context)
@@ -242,7 +274,7 @@ fun captureFullView(view: View, context: Context): Bitmap? {
     // 获取屏幕宽度，减去左右边距
     val screenWidth = getScreenWidth(context)
     val padding = (16 * 2 * context.resources.displayMetrics.density).toInt() // 16dp * 2 转换为像素
-    val contentWidth = screenWidth - padding
+    val contentWidth = screenWidth - 0
 
     // 使用屏幕宽度作为测量宽度，确保内容在测量时就会正确换行
     view.measure(
