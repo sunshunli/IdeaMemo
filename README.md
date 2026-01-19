@@ -51,6 +51,9 @@ Here are the current features:
 ## 🌍 Translation
 Multi-language translation is done by AI, there may be errors, please point them out.Thanks!
 
+## Donations ☕
+[<img src="https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-ff5e5b?style=flat-square&logo=ko-fi" alt="Buy me a coffee on Ko-fi">](https://ko-fi.com/ldlywt)
+
 ## 🤗 Thanks
 This project was created by Compose. Some of the project's code is derived from excellent open-source projects.
 
