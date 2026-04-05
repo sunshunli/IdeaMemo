@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,17 +45,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ldlywt.note.R
 import com.ldlywt.note.bean.Note
+import com.ldlywt.note.bean.NoteShowBean
 import com.ldlywt.note.bean.Tag
 import com.ldlywt.note.component.PIconButton
 import com.ldlywt.note.ui.page.LocalMemosViewModel
@@ -72,6 +77,7 @@ fun ChatInputDialog(
     isShow: Boolean,
     modifier: Modifier = Modifier,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    parentNote: NoteShowBean? = null,
     dismiss: () -> Unit
 ) {
     var bottomSheetState by rememberSaveable { mutableStateOf(false) }
@@ -82,6 +88,7 @@ fun ChatInputDialog(
     var text: TextFieldValue by remember { mutableStateOf(TextFieldValue("")) }
     val context = LocalContext.current
     var tagMenuExpanded by remember { mutableStateOf(false) }
+    var tagSearchQuery by remember { mutableStateOf<String?>(null) }
     var photoImageUri by remember { mutableStateOf<Uri?>(null) }
     val tagList = LocalTags.current.filterNot { it.isCityTag }
     val memosViewModel = LocalMemosViewModel.current
@@ -114,7 +121,7 @@ fun ChatInputDialog(
         softwareKeyboardController?.hide()
         focusRequester.freeFocus()
         val content = text.text
-        memosViewModel.insertOrUpdate(Note(content = content, attachments = memoInputViewModel.uploadAttachments.toList()))
+        memosViewModel.insertOrUpdate(Note(content = content, attachments = memoInputViewModel.uploadAttachments.toList(), parentNoteId = parentNote?.note?.noteId))
         text = TextFieldValue("")
         memoInputViewModel.uploadAttachments.clear()
         dismiss()
@@ -132,11 +139,33 @@ fun ChatInputDialog(
     }
     @Composable
     fun TagButton(tagList: List<Tag>) {
-        // 提取文本替换逻辑为单独的函数，避免代码重复
+        // 根据搜索内容过滤标签
+        val filteredTags = remember(tagList, tagSearchQuery) {
+            if (tagSearchQuery == null) {
+                tagList
+            } else {
+                tagList.filter { it.tag.contains(tagSearchQuery!!, ignoreCase = true) }
+            }
+        }
+
         fun insertTagText(tagContent: String) {
             val newText = text.text.replaceRange(text.selection.min, text.selection.max, tagContent)
             val newSelection = TextRange(text.selection.min + tagContent.length)
             text = text.copy(newText, newSelection)
+        }
+
+        // 替换光标前的 #搜索词
+        fun replaceTagText(tagContent: String) {
+            val cursorPos = text.selection.start
+            val textBeforeCursor = text.text.substring(0, cursorPos)
+            val lastHashIndex = textBeforeCursor.lastIndexOf('#')
+            if (lastHashIndex != -1) {
+                val cleanTag = tagContent.removePrefix("#")
+                val replacement = "#$cleanTag "
+                val newText = text.text.replaceRange(lastHashIndex, cursorPos, replacement)
+                val newSelection = TextRange(lastHashIndex + replacement.length)
+                text = text.copy(newText, newSelection)
+            }
         }
 
         // 根据tagList是否为空选择不同的图标
@@ -147,42 +176,47 @@ fun ChatInputDialog(
             imageVector = tagIcon,
             contentDescription = stringResource(R.string.tag),
         ) {
-            if (tagList.isEmpty()) {
-                // 当没有标签时，直接插入#
-                insertTagText("#")
-            } else {
-                // 当有标签时，切换菜单展开状态
+            val cursorPos = text.selection.start
+            val textBeforeCursor = text.text.substring(0, cursorPos)
+            val lastHashIndex = textBeforeCursor.lastIndexOf('#')
+            val fragment = if (lastHashIndex != -1) textBeforeCursor.substring(lastHashIndex + 1) else null
+
+            if (fragment != null && !fragment.contains(" ") && !fragment.contains("\n")) {
+                // 如果当前已经在输入标签，则直接显示/隐藏菜单，并保留搜索词
+                tagSearchQuery = fragment
                 tagMenuExpanded = !tagMenuExpanded
+            } else {
+                // 否则插入 # 并显示菜单
+                insertTagText("#")
+                tagSearchQuery = ""
+                tagMenuExpanded = tagList.isNotEmpty()
             }
         }
 
         // 仅当有标签且菜单展开时显示下拉菜单
-        if (tagList.isNotEmpty() && tagMenuExpanded) {
+        if (filteredTags.isNotEmpty() && tagMenuExpanded) {
             Box {
-                // 使用rememberUpdatedState优化状态引用
-                val isTagClicked = remember { mutableStateOf(false) }
                 DropdownMenu(
-                    modifier = Modifier.wrapContentHeight().heightIn(max = 400.dp), // 修复heightIn用法
+                    modifier = Modifier.wrapContentHeight().heightIn(max = 400.dp),
                     expanded = tagMenuExpanded,
                     onDismissRequest = {
-                        if (!isTagClicked.value) {
-                            // 如果没有点击菜单项，插入#
-                            insertTagText("#")
-                        }
-                        // 重置状态并关闭菜单
-                        isTagClicked.value = false
                         tagMenuExpanded = false
+                        tagSearchQuery = null
                     },
                     properties = PopupProperties(focusable = false)
                 ) {
-                    tagList.forEach { tag ->
+                    filteredTags.forEach { tag ->
                         DropdownMenuItem(
                             text = { Text(tag.tag) },
                             onClick = {
-                                isTagClicked.value = true
-                                // 点击标签项时插入标签文本
-                                insertTagText("${tag} ")
+                                if (tagSearchQuery != null) {
+                                    replaceTagText(tag.tag)
+                                } else {
+                                    val cleanTag = tag.tag.removePrefix("#")
+                                    insertTagText("#$cleanTag ")
+                                }
                                 tagMenuExpanded = false
+                                tagSearchQuery = null
                             },
                         )
                     }
@@ -205,6 +239,24 @@ fun ChatInputDialog(
                     .fillMaxWidth()
                     .background(shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp), color = SaltTheme.colors.background)
             ) {
+                if (parentNote != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .background(SaltTheme.colors.subBackground, RoundedCornerShape(8.dp))
+                            .border(1.dp, SaltTheme.colors.subText.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = parentNote.note.content,
+                            maxLines = 4,
+                            overflow = TextOverflow.Ellipsis,
+                            style = SaltTheme.textStyles.paragraph.copy(fontSize = 13.sp, color = SaltTheme.colors.subText)
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = text,
@@ -212,6 +264,26 @@ fun ChatInputDialog(
                     textStyle = SaltTheme.textStyles.paragraph,
                     onValueChange = { it: TextFieldValue ->
                         text = it
+                        val cursorPos = it.selection.start
+                        val textBeforeCursor = it.text.substring(0, cursorPos)
+                        val lastHashIndex = textBeforeCursor.lastIndexOf('#')
+
+                        if (lastHashIndex != -1) {
+                            val fragment = textBeforeCursor.substring(lastHashIndex + 1)
+                            // 如果包含空格或换行，隐藏弹窗
+                            if (fragment.contains(" ") || fragment.contains("\n")) {
+                                tagMenuExpanded = false
+                                tagSearchQuery = null
+                            } else {
+                                tagSearchQuery = fragment
+                                // 检查是否有匹配项
+                                val hasMatch = tagList.any { it.tag.contains(fragment, ignoreCase = true) }
+                                tagMenuExpanded = hasMatch
+                            }
+                        } else {
+                            tagMenuExpanded = false
+                            tagSearchQuery = null
+                        }
                     },
                     modifier =
                         modifier

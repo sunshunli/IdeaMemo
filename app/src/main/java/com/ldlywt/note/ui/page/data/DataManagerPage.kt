@@ -1,6 +1,7 @@
 package com.ldlywt.note.ui.page.data
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -17,12 +18,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.FormatColorText
-import androidx.compose.material.icons.outlined.Javascript
 import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.Restore
-import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
@@ -40,7 +40,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -60,9 +59,10 @@ import com.ldlywt.note.ui.page.router.debouncedPopBackStack
 import com.ldlywt.note.ui.page.settings.SettingsBean
 import com.ldlywt.note.utils.BackUp
 import com.ldlywt.note.utils.ChoseFolderContract
+import com.ldlywt.note.utils.ExportHtmlContract
 import com.ldlywt.note.utils.ExportMarkDownContract
-import com.ldlywt.note.utils.ExportNotesJsonContract
 import com.ldlywt.note.utils.ExportTextContract
+import com.ldlywt.note.utils.ImportHtmlZipContract
 import com.ldlywt.note.utils.RestoreNotesContract
 import com.ldlywt.note.utils.SharedPreferencesUtils
 import com.ldlywt.note.utils.backUpFileName
@@ -96,11 +96,11 @@ fun DataManagerPage(
     val scope = rememberCoroutineScope()
     var showChoseFolderDialog by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    var isSuccess by remember { mutableStateOf(false) }
     var isShowRestartDialog by remember { mutableStateOf(false) }
     val webDavList = remember { mutableListOf<DavData>() }
     var openBottomSheet by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current as AppCompatActivity
-    val snackbarState = remember { SnackbarHostState() }
     var webInputDialog: Boolean by remember { mutableStateOf(false) }
     val autoBackSwitchState = SharedPreferencesUtils.localAutoBackup.collectAsState(false)
     val jianGuoCloudSwitchState = SharedPreferencesUtils.davLoginSuccess.collectAsState(false)
@@ -119,7 +119,7 @@ fun DataManagerPage(
             isLoading = true
             val resultStr = viewModel.exportToWebdav(context)
             isLoading = false
-            snackbarState.showSnackbar(resultStr)
+            isSuccess = true
         }
     }
 
@@ -134,6 +134,7 @@ fun DataManagerPage(
             webDavList.clear()
             webDavList.addAll(list)
             isLoading = false
+            isSuccess = true
             openBottomSheet = true
         }
     }
@@ -152,33 +153,29 @@ fun DataManagerPage(
             withContext(Dispatchers.IO) {
                 BackUp.exportTXTFile(list = noteState.notes, uri)
             }
-            snackbarState.showSnackbar(R.string.excute_success.str)
         }
     }
 
-    val exportMarkDownLauncher = rememberLauncherForActivityResult(ExportMarkDownContract("IdeaMemo")) { uri ->
+    val exportHtmlLauncher = rememberLauncherForActivityResult(ExportHtmlContract) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        lunchIo {
-            BackUp.exportMarkDownFile(list = noteState.notes, uri)
-            toast(R.string.excute_success.str)
+        lunchMain {
+            isLoading = true
+            withContext(Dispatchers.IO) {
+                BackUp.exportHtmlZip(list = noteState.notes, uri)
+            }
+            isLoading = false
+            isSuccess = true
         }
     }
 
-    // Create an ActivityResultLauncher
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument()
-    ) { uri ->
-        if (uri != null) {
-            scope.launch {
-                isLoading = true
-                withContext(Dispatchers.IO) {
-                    BackUp.export(context, uri)
-                }
-                isLoading = false
-                snackbarState.showSnackbar(R.string.excute_success.str)
+    val exportMarkDownLauncher =
+        rememberLauncherForActivityResult(ExportMarkDownContract("IdeaMemo")) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            lunchIo {
+                BackUp.exportMarkDownFile(list = noteState.notes, uri)
+                toast(R.string.excute_success.str)
             }
         }
-    }
 
     // Create an ActivityResultLauncher
     val encryptedExportLauncher = rememberLauncherForActivityResult(
@@ -191,39 +188,35 @@ fun DataManagerPage(
                     BackUp.exportEncrypted(context, uri)
                 }
                 isLoading = false
-                snackbarState.showSnackbar(R.string.excute_success.str)
+                isSuccess = true
             }
         }
     }
 
-    val restoreEncryptFromSdLauncher = rememberLauncherForActivityResult(RestoreNotesContract) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        lunchMain {
-            isLoading = true
-            BackUp.restoreFromEncryptedZip(App.instance, uri, true)
-            isLoading = false
-            isShowRestartDialog = true
-        }
-    }
-
-
-    val restoreNoEncryLauncher = rememberLauncherForActivityResult(RestoreNotesContract) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        lunchMain {
-            isLoading = true
-            BackUp.restoreFromSd(uri)
-            isLoading = false
-            isShowRestartDialog = true
-        }
-    }
-
-    val exportNotesJsonLauncher = rememberLauncherForActivityResult(ExportNotesJsonContract) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        lunchMain {
-            withContext(Dispatchers.IO) {
-                BackUp.exportJson(list = noteState.notes, uri)
+    val restoreEncryptFromSdLauncher =
+        rememberLauncherForActivityResult(RestoreNotesContract) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            lunchMain {
+                isLoading = true
+                BackUp.restoreFromEncryptedZip(App.instance, uri, true)
+                isLoading = false
+                isSuccess = true
+                isShowRestartDialog = true
             }
-            snackbarState.showSnackbar(R.string.excute_success.str)
+        }
+
+    val importHtmlZipLauncher = rememberLauncherForActivityResult(ImportHtmlZipContract) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        lunchMain {
+            isLoading = true
+            val result = BackUp.importFromHtmlZip(context, uri)
+            isLoading = false
+            result.onSuccess { count ->
+                isSuccess = true
+            }.onFailure { e ->
+                isSuccess = false
+                Toast.makeText(context, "导入失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -234,20 +227,17 @@ fun DataManagerPage(
         SettingsBean(R.string.data_restore, Icons.Outlined.Restore) {
             restoreEncryptFromSdLauncher.launch(null)
         },
-        SettingsBean(R.string.json_export, Icons.Outlined.Javascript) {
-            exportNotesJsonLauncher.launch(null)
-        },
         SettingsBean(R.string.txt_export, Icons.Outlined.TextFields) {
             exportTxtLauncher.launch(null)
         },
         SettingsBean(R.string.mk_export, Icons.Outlined.FormatColorText) {
             exportMarkDownLauncher.launch(null)
         },
-        SettingsBean(R.string.export_data, Icons.Outlined.SaveAlt) {
-            exportLauncher.launch("IdeaMNoEncrypt.zip")
+        SettingsBean(R.string.html_export, Icons.Outlined.FileDownload) {
+            exportHtmlLauncher.launch(null)
         },
-        SettingsBean(R.string.export_restore_no_encr, Icons.Outlined.FileUpload) {
-            restoreNoEncryLauncher.launch(null)
+        SettingsBean(R.string.html_import, Icons.Outlined.FileUpload) {
+            importHtmlZipLauncher.launch(null)
         },
     )
 
@@ -272,9 +262,10 @@ fun DataManagerPage(
                         it.onClick()
                     },
                     text = it.title.str,
-                    iconPainter = rememberVectorPainter(it.imageVector),
                 )
             }
+        }
+        RoundedColumn {
             val localBackUri = SharedPreferencesUtils.localBackupUri.collectAsState("")
             ItemSwitcher(
                 state = autoBackSwitchState.value,
@@ -296,6 +287,7 @@ fun DataManagerPage(
                 text = R.string.title_local_auto_backup.str
             )
         }
+
 
         if (webInputDialog) {
             AccountInputDialog(
@@ -335,7 +327,11 @@ fun DataManagerPage(
             }
         }
     }
-    LoadingComponent(isLoading)
+
+    LoadingComponent(isLoading = isLoading, isSuccess = isSuccess) {
+        isSuccess = false
+    }
+
     ChoseFolderDialog(
         visible = showChoseFolderDialog,
         onDismissRequest = {
@@ -345,10 +341,14 @@ fun DataManagerPage(
             showChoseFolderDialog = false
         })
 
-    ConfirmDialog(isShowRestartDialog, title = R.string.restart.str, content = R.string.app_restored.str,
+    ConfirmDialog(
+        isShowRestartDialog,
+        title = R.string.restart.str,
+        content = R.string.app_restored.str,
         onDismissRequest = {
             isShowRestartDialog = false
-        }, onConfirmRequest = {
+        },
+        onConfirmRequest = {
             isShowRestartDialog = false
             val packageManager = context.packageManager
             val intent = packageManager.getLaunchIntentForPackage(context.packageName)
@@ -358,7 +358,7 @@ fun DataManagerPage(
             Runtime.getRuntime().exit(0)
         })
 
-    WebRestoreBottomSheet(show = openBottomSheet, webDavList, onDismissRequest = {
+    WebRestoreBottomSheet(show = openBottomSheet, list = webDavList, onDismissRequest = {
         openBottomSheet = false
     }, onConfirmRequest = { davData ->
         lunchMain {
@@ -366,31 +366,29 @@ fun DataManagerPage(
             isLoading = true
             val resultPath = viewModel.downloadFileByPath(davData)
             if (!resultPath.isNullOrEmpty()) {
-                val uri = FileProvider.getUriForFile(context, "com.ldlywt.note.provider", File(resultPath))
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "com.ldlywt.note.provider",
+                    File(resultPath)
+                )
                 BackUp.restoreFromEncryptedZip(App.instance, uri, true)
                 isLoading = false
+                isSuccess = true
                 isShowRestartDialog = true
+            } else {
+                isLoading = false
+                isSuccess = false
             }
         }
     })
-    LoadingComponent(isLoading)
-    ConfirmDialog(isShowRestartDialog, title = R.string.restart.str, content = R.string.app_restored.str,
-        onDismissRequest = {
-            isShowRestartDialog = false
-        }, onConfirmRequest = {
-            isShowRestartDialog = false
-            val packageManager = context.packageManager
-            val intent = packageManager.getLaunchIntentForPackage(context.packageName)
-            val componentName = intent!!.component
-            val mainIntent = Intent.makeRestartActivityTask(componentName)
-            context.startActivity(mainIntent)
-            Runtime.getRuntime().exit(0)
-        })
-
 }
 
 @Composable
-fun ChoseFolderDialog(visible: Boolean, onDismissRequest: () -> Unit, onConfirmRequest: () -> Unit) {
+fun ChoseFolderDialog(
+    visible: Boolean,
+    onDismissRequest: () -> Unit,
+    onConfirmRequest: () -> Unit
+) {
     RYDialog(
         visible = visible,
         properties = DialogProperties(),
@@ -423,16 +421,23 @@ fun ChoseFolderDialog(visible: Boolean, onDismissRequest: () -> Unit, onConfirmR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WebRestoreBottomSheet(show: Boolean, list: List<DavData>, onDismissRequest: () -> Unit, onConfirmRequest: (data: DavData) -> Unit) {
+fun WebRestoreBottomSheet(
+    show: Boolean,
+    list: List<DavData>,
+    onDismissRequest: () -> Unit,
+    onConfirmRequest: (data: DavData) -> Unit
+) {
 
     if (show) {
         ModalBottomSheet(onDismissRequest = onDismissRequest) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 LazyColumn {
                     items(list.size) {
-                        ListItem(headlineContent = { Text(list[it].displayName) }, modifier = Modifier.clickable {
-                            onConfirmRequest(list[it])
-                        })
+                        ListItem(
+                            headlineContent = { Text(list[it].displayName) },
+                            modifier = Modifier.clickable {
+                                onConfirmRequest(list[it])
+                            })
                     }
                 }
             }
@@ -463,7 +468,6 @@ fun AccountInputDialog(
         val serverUrl = SharedPreferencesUtils.davServerUrl.collectAsState("")
         val username = SharedPreferencesUtils.davUserName.collectAsState(null)
         val password = SharedPreferencesUtils.davPassword.collectAsState(null)
-        val dataManagerViewMode: DataManagerViewModel = hiltViewModel()
 //        val focusRequester = remember { FocusRequester() }
         ItemEdit(
             text = serverUrl.value ?: "",
@@ -505,35 +509,16 @@ fun AccountInputDialog(
                 onClick = {
                     onDismissRequest()
                 },
-                modifier = Modifier
-                    .weight(1f),
-                text = R.string.cancel.str,
-                textColor = SaltTheme.colors.subText,
-                backgroundColor = SaltTheme.colors.subBackground
+                text = stringResource(id = R.string.cancel)
             )
-            Spacer(modifier = Modifier.width(SaltTheme.dimens.contentPadding))
+            Spacer(modifier = Modifier.width(SaltTheme.dimens.innerVerticalPadding))
             com.moriafly.salt.ui.TextButton(
                 onClick = {
-                    lunchIo {
-                        val pair = dataManagerViewMode.checkConnection(serverUrl.value!!, username.value!!, password.value!!)
-                        withContext(Dispatchers.Main) {
-                            toast(pair.second)
-                            scope.launch {
-                                SharedPreferencesUtils.updateDavLoginSuccess(pair.first)
-                                if (pair.first) {
-                                    onConfirm()
-                                }
-                            }
-
-                        }
-                    }
+                    onConfirm()
                 },
-                modifier = Modifier
-                    .weight(1f),
-                text = R.string.submit.str
+                text = stringResource(id = R.string.confirm)
             )
         }
         ItemOutSpacer()
     }
 }
-

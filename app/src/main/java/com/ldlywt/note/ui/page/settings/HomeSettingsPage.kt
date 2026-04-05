@@ -3,6 +3,7 @@
 package com.ldlywt.note.ui.page.settings
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,12 +19,17 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Feed
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.outlined.LineStyle
+import androidx.compose.material.icons.outlined.LocalCafe
 import androidx.compose.material.icons.outlined.Photo
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
@@ -56,12 +63,14 @@ import com.ldlywt.note.ui.page.data.DataManagerViewModel
 import com.ldlywt.note.ui.page.main.MainActivity
 import com.ldlywt.note.ui.page.router.Screen
 import com.ldlywt.note.utils.Constant
+import com.ldlywt.note.utils.DonateUtils
 import com.ldlywt.note.utils.SettingsPreferences
 import com.ldlywt.note.utils.lunchIo
 import com.ldlywt.note.utils.str
 import com.ldlywt.note.utils.toYYMMDD
 import com.ldlywt.note.utils.toast
 import com.moriafly.salt.ui.Item
+import com.moriafly.salt.ui.ItemArrowType
 import com.moriafly.salt.ui.ItemSwitcher
 import com.moriafly.salt.ui.ItemTitle
 import com.moriafly.salt.ui.RoundedColumn
@@ -107,17 +116,21 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
 
     val context = LocalContext.current
     val themeModePopupMenuState = rememberPopupState()
-    val maxLinePopupMenuState = rememberPopupState()
     val settingsViewModel = hiltViewModel<SettingsViewModel>()
     val biometricAuthState by settingsViewModel.biometricAuthState.collectAsState()
-    var showWarnDialog by rememberSaveable { mutableStateOf(false) }
     val dynamicColor by SettingsPreferences.dynamicColor.collectAsState(false)
     val themeMode by SettingsPreferences.themeMode.collectAsState(SettingsPreferences.ThemeMode.SYSTEM)
     val scope = rememberCoroutineScope()
-
+    var downloadDialogVisible by remember { mutableStateOf(false) }
     val settingList = listOf(
-        SettingsBean(R.string.random_walk, Icons.Outlined.Explore) { navController.navigate(Screen.RandomWalk) },
-        SettingsBean(R.string.gallery, Icons.Outlined.Photo) { navController.navigate(Screen.Gallery) },
+        SettingsBean(
+            R.string.random_walk,
+            Icons.Outlined.Explore
+        ) { navController.navigate(Screen.RandomWalk) },
+        SettingsBean(
+            R.string.gallery,
+            Icons.Outlined.Photo
+        ) { navController.navigate(Screen.Gallery) },
     )
 
     LazyColumn(
@@ -233,18 +246,16 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
             item {
                 RoundedColumn {
                     ItemTitle(text = stringResource(R.string.other))
-//                    Item(
-//                        onClick = {
-//                            showWarnDialog = true
-//                        },
-//                        text = stringResource(id = R.string.warm_reminder),
-//                        iconPainter = rememberVectorPainter(image = Icons.Outlined.TipsAndUpdates),
-//                        iconColor = SaltTheme.colors.text,
-//                        iconPaddingValues = PaddingValues(all = 1.5.dp)
-//                    )
                     Item(
                         onClick = {
-                            Constant.startGithubReleaseUrl(context)
+                            navController.navigate(Screen.DonatePage)
+                        },
+                        text = R.string.donate_app.str,
+                        iconPainter = rememberVectorPainter(Icons.Outlined.LocalCafe),
+                    )
+                    Item(
+                        onClick = {
+                            downloadDialogVisible = true
                         },
                         text = R.string.new_version.str,
                         iconPainter = rememberVectorPainter(Icons.Outlined.Download),
@@ -266,6 +277,12 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
 //    if (showWarnDialog) {
 //        TipsDialog(block = { showWarnDialog = false })
 //    }
+    // Show feedback dialog when feedbackDialogVisible is true
+    if (downloadDialogVisible) {
+        DownloadsDialog {
+            downloadDialogVisible = false
+        }
+    }
 }
 
 @Composable
@@ -281,10 +298,15 @@ fun SettingsHeadLayout() {
             modifier, memos.size.toString(), R.string.all_note.str
         )
         boxText(
-            modifier, memos.fastSumBy { it.note.noteTitle?.length ?: (0 + it.note.content.length) }.toString(), R.string.characters.str
+            modifier,
+            memos.fastSumBy { it.note.noteTitle?.length ?: (0 + it.note.content.length) }
+                .toString(),
+            R.string.characters.str
         )
         boxText(
-            modifier, memos.map { it.note.createTime.toYYMMDD() }.toSet().size.toString(), R.string.dyas.str
+            modifier,
+            memos.map { it.note.createTime.toYYMMDD() }.toSet().size.toString(),
+            R.string.dyas.str
         )
 
         boxText(
@@ -313,4 +335,44 @@ private fun boxText(modifier: Modifier, title: String, desc: String) {
             style = SaltTheme.textStyles.sub,
         )
     }
+}
+
+
+@Composable
+fun DownloadsDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    AlertDialog(
+        containerColor = SaltTheme.colors.background,
+        onDismissRequest = { onDismiss() },
+        title = { Text(stringResource(R.string.new_version), color = SaltTheme.colors.text) },
+        text = {
+            Column {
+                Item(
+                    onClick = {
+                        Constant.startGithubReleaseUrl(context)
+                        onDismiss()
+                    },
+                    text = R.string.github.str,
+                    arrowType = ItemArrowType.Arrow
+                )
+                Item(
+                    onClick = {
+                        DonateUtils.openGooglePlay(
+                            context
+                        )
+                        onDismiss()
+                    },
+                    text = "Google Play",
+                    arrowType = ItemArrowType.Arrow
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                onDismiss()
+            }) {
+                com.moriafly.salt.ui.Text(R.string.cancel.str, color = Color.White)
+            }
+        }
+    )
 }

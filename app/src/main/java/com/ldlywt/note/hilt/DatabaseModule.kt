@@ -27,7 +27,11 @@ object DatabaseModule {
     private const val DATABASE_NAME = "ssndb"
 
     private fun buildDatabase(context: Context) =
-        Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DATABASE_NAME).fallbackToDestructiveMigration().addCallback(CALLBACK).build()
+        Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, DATABASE_NAME)
+            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .fallbackToDestructiveMigration()
+            .addCallback(CALLBACK)
+            .build()
 
     private val CALLBACK = object : RoomDatabase.Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {

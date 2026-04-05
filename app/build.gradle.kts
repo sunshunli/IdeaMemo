@@ -1,3 +1,5 @@
+import com.android.build.gradle.ProguardFiles.getDefaultProguardFile
+import com.android.tools.r8.internal.fa
 import java.util.Properties
 
 plugins {
@@ -19,12 +21,17 @@ android {
         abortOnError = false
     }
 
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     defaultConfig {
         applicationId = "com.ldlywt.note"
         minSdk = 26
         targetSdk = 35
-        versionCode = 221
-        versionName = "2.2.1"
+        versionCode = 251
+        versionName = "2.5.1"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -71,17 +78,6 @@ android {
         enableAggregatingTask = false
     }
 
-    signingConfigs {
-        kotlin.runCatching { System.getenv("KEYSTORE_PASSWORD") }.getOrNull()?.let {
-            create("release") {
-                storeFile = file("../keystore.jks")
-                storePassword = it
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEYSTORE_PASSWORD")
-            }
-        }
-    }
-
     buildTypes {
         release {
             isShrinkResources = true
@@ -92,6 +88,12 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            isShrinkResources = false
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
+        }
+
     }
     applicationVariants.all {
         val variant = this
@@ -108,8 +110,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
     buildFeatures {
         compose = true
@@ -148,7 +152,6 @@ dependencies {
 
     // jsoup
     implementation(libs.jsoup)
-    implementation(libs.androidx.biometric.ktx)
 
     // hilt
     ksp(libs.hilt.compiler)
@@ -202,15 +205,16 @@ dependencies {
     implementation("io.github.moriafly:salt-ui:2.0.0")
     // Kotlin
     implementation("androidx.biometric:biometric:1.4.0-alpha02")
+    // Kotlin
+    implementation("androidx.biometric:biometric-ktx:1.4.0-alpha02")
 
     val markwon_version = "4.6.2"
 
-    implementation ("io.noties.markwon:core:$markwon_version")
-    implementation ("io.noties.markwon:ext-strikethrough:$markwon_version")
-    implementation ("io.noties.markwon:ext-tables:$markwon_version")
-    implementation ("io.noties.markwon:html:$markwon_version")
-    implementation ("io.noties.markwon:linkify:$markwon_version")
+    implementation("io.noties.markwon:core:$markwon_version")
+    implementation("io.noties.markwon:ext-strikethrough:$markwon_version")
+    implementation("io.noties.markwon:ext-tables:$markwon_version")
+    implementation("io.noties.markwon:html:$markwon_version")
+    implementation("io.noties.markwon:linkify:$markwon_version")
     implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation ("com.github.jeziellago:Markwon:58aa5aba6a")
-
+    implementation("com.github.jeziellago:Markwon:58aa5aba6a")
 }

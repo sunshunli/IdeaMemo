@@ -10,26 +10,6 @@ import androidx.activity.result.contract.ActivityResultContract
 
 object None
 
-object ChooseFilesContract : ActivityResultContract<None?, List<Uri>>() {
-    override fun createIntent(context: Context, input: None?): Intent {
-        return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*", "audio/*"))
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-            type = "*/*"
-        }
-    }
-
-    override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
-        if (intent == null || resultCode != Activity.RESULT_OK) return emptyList()
-
-        val clipItemCount = intent.clipData?.itemCount ?: 0
-        return listOfNotNull(intent.data) + (0 until clipItemCount).mapNotNull {
-            intent.clipData?.getItemAt(it)?.uri
-        }
-    }
-}
-
 object ExportNotesJsonContract : ActivityResultContract<None?, Uri?>() {
     override fun createIntent(context: Context, input: None?): Intent {
         return Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -56,10 +36,20 @@ object ChoseFolderContract : ActivityResultContract<None?, Uri?>() {
 
 object ExportTextContract : ActivityResultContract<None?, Uri?>() {
     override fun createIntent(context: Context, input: None?): Intent {
+        return Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+    }
+
+    override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
+        return if (intent != null && resultCode == Activity.RESULT_OK) intent.data else null
+    }
+}
+
+object ExportHtmlContract : ActivityResultContract<None?, Uri?>() {
+    override fun createIntent(context: Context, input: None?): Intent {
         return Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TITLE, "IdeaMemo.txt")
+            type = "application/zip"
+            putExtra(Intent.EXTRA_TITLE, "IdeaMemoHtml.zip")
         }
     }
 
@@ -83,6 +73,19 @@ class ExportMarkDownContract(val name: String) : ActivityResultContract<None?, U
 }
 
 object RestoreNotesContract : ActivityResultContract<None?, Uri?>() {
+    override fun createIntent(context: Context, input: None?): Intent {
+        return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/zip"
+        }
+    }
+
+    override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
+        return if (intent != null && resultCode == Activity.RESULT_OK) intent.data else null
+    }
+}
+
+object ImportHtmlZipContract : ActivityResultContract<None?, Uri?>() {
     override fun createIntent(context: Context, input: None?): Intent {
         return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)

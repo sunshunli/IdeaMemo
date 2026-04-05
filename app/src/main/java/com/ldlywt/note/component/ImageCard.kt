@@ -32,7 +32,7 @@ fun ImageCard(note: Note, navHostController: NavHostController?) {
                 .height(160.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .clickable {
-                    navHostController?.navigate(Screen.PictureDisplay(arrayListOf(note.attachments[0].path), 0))
+                    navHostController?.navigate(Screen.PictureDisplay(arrayListOf(note.attachments[0].path), 0,  listOf(note.createTime )))
                 },
             contentScale = ContentScale.Crop
         )
@@ -52,7 +52,7 @@ fun ImageCard(note: Note, navHostController: NavHostController?) {
                         .zIndex(1f)
                         .clip(RoundedCornerShape(8.dp))
                         .clickable {
-                            navHostController?.navigate(Screen.PictureDisplay(note.attachments.map { it.path }, index))
+                            navHostController?.navigate(Screen.PictureDisplay(note.attachments.map { it.path }, index,  listOf(note.createTime )))
                         },
                     contentScale = ContentScale.Crop
                 )

@@ -22,12 +22,15 @@ import com.ldlywt.note.ui.page.PictureDisplayPage
 import com.ldlywt.note.ui.page.data.DataCloudConfigPage
 import com.ldlywt.note.ui.page.data.DataManagerPage
 import com.ldlywt.note.ui.page.input.MemoInputPage
+import com.ldlywt.note.ui.page.input.MemoPreviewPage
 import com.ldlywt.note.ui.page.main.MainScreen
 import com.ldlywt.note.ui.page.search.SearchPage
+import com.ldlywt.note.ui.page.settings.DonatePage
 import com.ldlywt.note.ui.page.settings.ExplorePage
 import com.ldlywt.note.ui.page.settings.GalleryPage
 import com.ldlywt.note.ui.page.settings.MoreInfoPage
 import com.ldlywt.note.ui.page.share.SharePage
+import com.ldlywt.note.ui.page.tag.CommentListPage
 import com.ldlywt.note.ui.page.tag.DateRangePage
 import com.ldlywt.note.ui.page.tag.LocationDetailPage
 import com.ldlywt.note.ui.page.tag.TagDetailPage
@@ -36,8 +39,8 @@ import com.ldlywt.note.ui.page.tag.YearDetailPage
 import com.ldlywt.note.utils.SettingsPreferences
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.UnstableSaltApi
-import com.moriafly.salt.ui.darkSaltColors
 import com.moriafly.salt.ui.lightSaltColors
+import com.moriafly.salt.ui.darkSaltColors
 import com.moriafly.salt.ui.saltColorsByColorScheme
 import com.moriafly.salt.ui.saltConfigs
 
@@ -167,7 +170,7 @@ fun NavHostContainer(
 
         composable<Screen.PictureDisplay> { navBackStackEntry ->
             val args = navBackStackEntry.toRoute<Screen.PictureDisplay>()
-            PictureDisplayPage(pathList = args.pathList, index = args.curIndex, navController = navController)
+            PictureDisplayPage(pathList = args.pathList, curIndex = args.curIndex, timestamps = args.timestamps, navController = navController)
         }
 
         composable<Screen.InputDetail> { navBackStackEntry ->
@@ -175,9 +178,23 @@ fun NavHostContainer(
             MemoInputPage(args.id)
         }
 
+        composable<Screen.MemoPreview> { navBackStackEntry ->
+            val args = navBackStackEntry.toRoute<Screen.MemoPreview>()
+            MemoPreviewPage(args.id)
+        }
+
         composable<Screen.Share> { navBackStackEntry ->
             val args = navBackStackEntry.toRoute<Screen.Share>()
             SharePage(args.id, navController)
+        }
+
+        composable<Screen.DonatePage> {
+            DonatePage(navController = navController)
+        }
+
+        composable<Screen.CommentList> { navBackStackEntry ->
+            val args = navBackStackEntry.toRoute<Screen.CommentList>()
+            CommentListPage(parentNoteId = args.parentNoteId, navController = navController)
         }
     }
 }

@@ -35,7 +35,11 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActionBottomSheet(
-    navHostController: NavHostController, noteShowBean: NoteShowBean, show: Boolean, onDismissRequest: () -> Unit
+    navHostController: NavHostController,
+    noteShowBean: NoteShowBean,
+    show: Boolean,
+    onCommentClick: ((NoteShowBean) -> Unit)? = null,
+    onDismissRequest: () -> Unit
 ) {
 
     val viewModel = LocalMemosViewModel.current
@@ -70,6 +74,15 @@ fun ActionBottomSheet(
 //                            Text(text = R.string.pin.str, style = MaterialTheme.typography.titleMedium)
 //                        }
 //                    }
+
+                    item {
+                        TextButton(onClick = {
+                            onCommentClick?.invoke(noteShowBean)
+                            onDismissRequest()
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text(text = R.string.comment.str, style = SaltTheme.textStyles.paragraph)
+                        }
+                    }
 
                     item {
                         TextButton(onClick = {

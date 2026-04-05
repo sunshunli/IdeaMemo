@@ -115,6 +115,8 @@ class TagNoteRepo(
 
     fun getNoteShowBeanById(noteId: Long): NoteShowBean? = tagNoteDao.getNoteShowBeanById(noteId)
 
+    fun getNoteShowBeanByIdFlow(noteId: Long): Flow<NoteShowBean?> = tagNoteDao.getNoteShowBeanByIdFlow(noteId)
+
     fun getNotesOnSelectedDate(selectedDate: String): List<NoteShowBean> = tagNoteDao.getNoteShowOnDate(selectedDate)
 
     suspend fun getAllDistinctYears(): List<String> {
@@ -133,5 +135,7 @@ class TagNoteRepo(
     fun clearLocationInfo(locationInfo: String) {
         noteDao.clearLocationInfo(locationInfo)
     }
+
+    fun getCommentsByParentId(parentNoteId: Long): Flow<List<NoteShowBean>> = tagNoteDao.getCommentsByParentId(parentNoteId)
 
 }

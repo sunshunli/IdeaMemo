@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">碎碎記</string>
     <string name="all_note">筆記</string>
     <string name="cancel">取消</string>
     <string name="explore">探索</string>
@@ -42,7 +41,7 @@
     <string name="title_local_auto_backup">本地自動備份</string>
     <string name="any_thoughts">✍️任何想法…</string>
     <string name="five_star_review">好評鼓勵</string>
-    <string name="feedback">郵件反饋</string>
+    <string name="feedback_email">郵件反饋</string>
     <string name="share_app_content">快速記錄你的靈感.下載地址: https://play.google.com/store/apps/details?id=com.ldlywt.note</string>
     <string name="select_mail_tips">選擇郵件</string>
     <string name="no_mail_app_tips">沒有郵件應用</string>
@@ -100,11 +99,17 @@
     <string name="follow_system">系統</string>
     <string name="exit">退出</string>
     <string name="new_version">下載地址</string>
-    <string name="github">開源地址</string>
+    <string name="github">Github</string>
     <string name="card_note_maxline">首頁卡片最大行數</string>
     <string name="delete_location">確定要刪除 %1$s 位置資訊？</string>
     <string name="donate_list">捐贈名單</string>
     <string name="thanks">鳴謝</string>
     <string name="collapse">收起</string>
     <string name="read_more">全文</string>
+    <string name="donate_alipay_desc">通過支付寶支持開發者</string>
+    <string name="donate_paypal_desc">通過PayPal支持開發者</string>
+    <string name="donate_ad">觀看廣告</string>
+    <string name="donate_ad_desc">觀看廣告支持開發者</string>
+    <string name="feedback_title">意见反馈</string>
+    <string name="feedback_lark">飛書問卷</string>
 </resources>

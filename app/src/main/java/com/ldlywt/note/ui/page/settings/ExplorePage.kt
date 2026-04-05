@@ -72,7 +72,7 @@ fun ExploreList(
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-    val cardHeight = screenHeight - 200.dp
+    val cardHeight = screenHeight - 80.dp
     val listEmpty = remember { mutableStateOf(false) }
     if (listEmpty.value) {
         EmptyComponent()

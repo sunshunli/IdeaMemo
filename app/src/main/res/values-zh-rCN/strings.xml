@@ -1,6 +1,5 @@
 <resources>
 
-    <string name="app_name">碎碎记</string>
     <string name="all_note">笔记</string>
     <string name="cancel">取消</string>
     <string name="explore">探索</string>
@@ -32,6 +31,8 @@
     <string name="json_export">Json 导出</string>
     <string name="txt_export">Txt 导出</string>
     <string name="mk_export">MarkDown 导出</string>
+    <string name="html_export">导出为网页</string>
+    <string name="html_import">Flomo导入</string>
     <string name="webdav_backup">备份</string>
     <string name="webdav_restore">还原</string>
     <string name="tag_fix">标签修正</string>
@@ -41,7 +42,7 @@
     <string name="title_local_auto_backup">本地自动备份</string>
     <string name="any_thoughts">✍️任何想法…</string>
     <string name="five_star_review">好评鼓励</string>
-    <string name="feedback">邮件反馈</string>
+    <string name="feedback_email">邮件反馈</string>
     <string name="share_app_content">快速记录你的灵感.下载地址: https://play.google.com/store/apps/details?id=com.ldlywt.note</string>
     <string name="select_mail_tips">Select Email</string>
     <string name="no_mail_app_tips">No Email App</string>
@@ -101,7 +102,7 @@
     <string name="follow_system">系统</string>
     <string name="exit">退出</string>
     <string name="new_version">下载地址</string>
-    <string name="github">开源地址</string>
+    <string name="github">Github</string>
     <string name="card_note_maxline">首页卡片最大行数</string>
     <string name="delete_location">确定要删除 %1$s 位置信息？</string>
     <string name="donate_list">捐赠名单</string>
@@ -114,4 +115,11 @@
     <string name="date_range">时间区间</string>
     <string name="collapse">收起</string>
     <string name="read_more">全文</string>
+    <string name="donate_alipay_desc">通过支付宝支持开发者</string>
+    <string name="donate_paypal_desc">通过PayPal支持开发者</string>
+    <string name="donate_ad">观看广告</string>
+    <string name="donate_ad_desc">观看广告支持开发者</string>
+    <string name="feedback_title">意见反馈</string>
+    <string name="feedback_lark">飞书问卷</string>
+    <string name="comment">批注</string>
 </resources>

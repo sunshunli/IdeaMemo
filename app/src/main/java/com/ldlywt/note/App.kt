@@ -3,10 +3,13 @@ package com.ldlywt.note
 import android.app.Application
 import androidx.lifecycle.asLiveData
 import com.ldlywt.note.backup.BackupScheduler
+import com.ldlywt.note.db.repo.TagNoteRepo
 import com.ldlywt.note.utils.SettingsPreferences
 import com.ldlywt.note.utils.SharedPreferencesUtils
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.DelicateCoroutinesApi
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -20,8 +23,8 @@ fun getAppName(): String {
 class App : Application() {
 
     override fun onCreate() {
-        super.onCreate()
         instance = this
+        super.onCreate()
         val localAutoBackup = SharedPreferencesUtils.localAutoBackup.asLiveData().value
         if (localAutoBackup == true) {
             BackupScheduler.scheduleDailyBackup(this)
@@ -40,4 +43,10 @@ class App : Application() {
         lateinit var instance: App
             private set
     }
+}
+
+@InstallIn(SingletonComponent::class)   // <-- add this line
+@EntryPoint
+interface AppEntryPoint {
+    fun tagNoteRepo(): TagNoteRepo
 }

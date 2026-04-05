@@ -43,3 +43,8 @@
 
 -keep class org.xmlpull.** { *; }
 -keepclassmembers class org.xmlpull.** { *; }
+
+-keepclassmembers class kotlin.io.** { *; }
+
+-keep class org.zeroturnaround.zip.** { *; }
+-keep class net.lingala.zip4j.** { *; }

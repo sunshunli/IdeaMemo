@@ -7,17 +7,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.Contactless
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Feed
 import androidx.compose.material.icons.outlined.Feedback
-import androidx.compose.material.icons.outlined.LocalCafe
-import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
@@ -58,13 +56,17 @@ import com.moriafly.salt.ui.Text
 import com.moriafly.salt.ui.TitleBar
 import com.moriafly.salt.ui.UnstableSaltApi
 
-
 @Composable
 fun ContactDialog(block: () -> Unit) {
     AlertDialog(
         containerColor = SaltTheme.colors.background,
         onDismissRequest = { },
-        title = { androidx.compose.material3.Text(stringResource(R.string.contact), color = SaltTheme.colors.text) },
+        title = {
+            androidx.compose.material3.Text(
+                stringResource(R.string.contact),
+                color = SaltTheme.colors.text
+            )
+        },
         text = { AboutComposeScreen() },
         confirmButton = {
             Button(onClick = {
@@ -77,26 +79,39 @@ fun ContactDialog(block: () -> Unit) {
 }
 
 @Composable
-fun DonateDialog(block: () -> Unit) {
-    val list = arrayListOf("尧孟张", "+（李刚)", "Tomo Ebizuka", "Corcube", "奶酪很热情")
+fun FeedbackDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
     AlertDialog(
         containerColor = SaltTheme.colors.background,
-        onDismissRequest = { },
-        title = { androidx.compose.material3.Text(stringResource(R.string.thanks), color = SaltTheme.colors.text) },
+        onDismissRequest = { onDismiss() },
+        title = { androidx.compose.material3.Text(stringResource(R.string.feedback_title), color = SaltTheme.colors.text) },
         text = {
-            LazyColumn {
-                list.forEach {
-                    item {
-                        Item(text = it, onClick = {}, arrowType = ItemArrowType.None)
-                    }
-                }
+            Column {
+                Item(
+                    onClick = {
+                        openMail(context)
+                        onDismiss()
+                    },
+                    text = R.string.feedback_email.str,
+                    iconPainter = rememberVectorPainter(Icons.Outlined.Email),
+                    arrowType = ItemArrowType.Arrow
+                )
+                Item(
+                    onClick = {
+                        context.openUrl("https://zcnbe28t548g.feishu.cn/share/base/form/shrcnJFyKGWV5TjnIVobVWmsGzc")
+                        onDismiss()
+                    },
+                    text = stringResource(R.string.feedback_lark),
+                    iconPainter = rememberVectorPainter(Icons.Outlined.Feed),
+                    arrowType = ItemArrowType.Arrow
+                )
             }
         },
         confirmButton = {
             Button(onClick = {
-                block()
+                onDismiss()
             }) {
-                Text("OK", color = Color.White)
+                Text(R.string.cancel.str, color = Color.White)
             }
         }
     )
@@ -108,11 +123,16 @@ fun MoreInfoPage(
     navController: NavHostController
 ) {
     val context = LocalContext.current
+    var feedbackDialogVisible by remember { mutableStateOf(false) }
+
     val settingList = listOf(
         SettingsBean(R.string.share_app, Icons.Outlined.Share) { shareApp(context) },
-        SettingsBean(R.string.five_star_review, Icons.Outlined.Star) { DonateUtils.openGooglePlay(context) },
-        SettingsBean(R.string.feedback, Icons.Outlined.Feedback) { openMail(context) },
-        SettingsBean(R.string.donate_app, Icons.Outlined.LocalCafe) { DonateUtils.openALiPay(context) },
+        SettingsBean(R.string.five_star_review, Icons.Outlined.Star) {
+            DonateUtils.openGooglePlay(
+                context
+            )
+        },
+        SettingsBean(R.string.feedback_title, Icons.Outlined.Feedback) { feedbackDialogVisible = true },
     )
     val aboutList = listOf(
         SettingsBean(R.string.user_agree, Icons.AutoMirrored.Outlined.Assignment) {
@@ -192,19 +212,6 @@ fun MoreInfoPage(
                     iconPainter = rememberVectorPainter(it.imageVector),
                 )
             }
-            var showDonateDialog by remember { mutableStateOf(false) }
-            if (showDonateDialog) {
-                DonateDialog {
-                    showDonateDialog = false
-                }
-            }
-            Item(
-                onClick = {
-                    showDonateDialog = true
-                },
-                text = R.string.donate_list.str,
-                iconPainter = rememberVectorPainter(Icons.Outlined.People),
-            )
         }
         RoundedColumn {
             var yesNoDialog by remember { mutableStateOf(false) }
@@ -222,15 +229,13 @@ fun MoreInfoPage(
                     iconPainter = rememberVectorPainter(it.imageVector),
                 )
             }
-
-            Item(
-                onClick = {
-                    yesNoDialog = true
-                },
-                text = R.string.contact.str,
-                iconPainter = rememberVectorPainter(Icons.Outlined.Contactless),
-            )
         }
 
+        // Show feedback dialog when feedbackDialogVisible is true
+        if (feedbackDialogVisible) {
+            FeedbackDialog {
+                feedbackDialogVisible = false
+            }
+        }
     }
 }

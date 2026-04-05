@@ -12,7 +12,6 @@ import androidx.room.PrimaryKey
 import androidx.room.Relation
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonNull.content
 
 @Serializable
 @Parcelize
@@ -32,12 +31,17 @@ data class NoteShowBean(
         entityColumn = "noteId",
     )
     val reminders: List<Reminder> = listOf(),
+    @Relation(
+        parentColumn = "parent_note_id",
+        entityColumn = "note_id"
+    )
+    val parentNote: Note? = null
 ) : Parcelable {
     fun doesMatchSearchQuery(query: String): Boolean {
         val matchingCombinations = listOf<String>(
             "${note.noteTitle}${note.content}",
-            "${note.noteTitle} $content",
-            "${note.noteTitle?.firstOrNull()} ${note.content.first()}"
+            "${note.noteTitle} ${note.content}",
+            "${note.noteTitle?.firstOrNull()} ${note.content.firstOrNull() ?: ""}"
         )
         return matchingCombinations.any {
             it.contains(query, true)
@@ -59,6 +63,7 @@ data class Note(
     @ColumnInfo(name = "update_time") var updateTime: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "is_collected") var isCollected: Boolean = false,
     @ColumnInfo(name = "is_deleted") var isDeleted: Boolean = false,
+    @ColumnInfo(name = "parent_note_id") var parentNoteId: Long? = null,
     var attachments: List<Attachment> = arrayListOf(),
     @Ignore var isHide: Boolean = false,
 ) : Parcelable

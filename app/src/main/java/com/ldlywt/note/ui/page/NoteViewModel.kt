@@ -105,6 +105,8 @@ class NoteViewModel @Inject constructor(private val tagNoteRepo: TagNoteRepo) : 
 
     fun getNoteShowBeanById(noteId: Long): NoteShowBean? = tagNoteRepo.getNoteShowBeanById(noteId)
 
+    fun getNoteShowBeanByIdFlow(noteId: Long): Flow<NoteShowBean?> = tagNoteRepo.getNoteShowBeanByIdFlow(noteId)
+
     fun insertOrUpdate(note: Note) {
         viewModelScope.launch(Dispatchers.IO) {
             tagNoteRepo.insertOrUpdate(note)
@@ -138,6 +140,8 @@ class NoteViewModel @Inject constructor(private val tagNoteRepo: TagNoteRepo) : 
             tagNoteRepo.clearLocationInfo(locationInfo)
         }
     }
+
+    fun getCommentsByParentId(parentNoteId: Long): Flow<List<NoteShowBean>> = tagNoteRepo.getCommentsByParentId(parentNoteId)
 
 }
 

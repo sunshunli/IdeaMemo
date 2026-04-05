@@ -3,6 +3,8 @@ package com.ldlywt.note.db
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ldlywt.note.bean.*
 import com.ldlywt.note.db.dao.NoteDao
 import com.ldlywt.note.db.dao.NoteTagCrossRefDao
@@ -16,7 +18,7 @@ import com.ldlywt.note.db.dao.TagNoteDao
         NoteTagCrossRef::class,
         Comment::class,
         Reminder::class,
-    ], version = 1, exportSchema = false
+    ], version = 2, exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -25,4 +27,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun getTagDao(): TagDao
     abstract fun getTagNote(): TagNoteDao
     abstract fun getNoteTagCrossRefDao(): NoteTagCrossRefDao
+
+    companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE Note ADD COLUMN parent_note_id INTEGER DEFAULT NULL")
+            }
+        }
+    }
 }

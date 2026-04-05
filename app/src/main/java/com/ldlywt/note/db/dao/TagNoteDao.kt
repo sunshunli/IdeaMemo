@@ -80,6 +80,10 @@ interface TagNoteDao {
     fun getNoteShowBeanById(noteId: Long): NoteShowBean?
 
     @Transaction
+    @Query("SELECT * FROM Note WHERE note_id = :noteId")
+    fun getNoteShowBeanByIdFlow(noteId: Long): Flow<NoteShowBean?>
+
+    @Transaction
     @Query("SELECT * FROM Note WHERE date(create_time / 1000, 'unixepoch') = :selectedDate")
     fun getNoteShowOnDate(selectedDate: String): List<NoteShowBean>
 
@@ -93,5 +97,9 @@ interface TagNoteDao {
 
     @Query("SELECT * FROM note WHERE create_time BETWEEN :startTime AND :endTime AND is_deleted = 0 ORDER BY create_time DESC")
     fun getNotesByCreateTimeRange(startTime: Long, endTime: Long): Flow<List<NoteShowBean>>
+
+    @Transaction
+    @Query("SELECT * FROM Note WHERE parent_note_id = :parentNoteId ORDER BY create_time DESC")
+    fun getCommentsByParentId(parentNoteId: Long): Flow<List<NoteShowBean>>
 
 }

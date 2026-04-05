@@ -1,6 +1,7 @@
 package com.ldlywt.note.component
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -38,7 +41,13 @@ enum class NoteCardFrom {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun NoteCard(noteShowBean: NoteShowBean, navHostController: NavHostController, from: NoteCardFrom = NoteCardFrom.COMMON) {
+fun NoteCard(
+    noteShowBean: NoteShowBean,
+    navHostController: NavHostController,
+    from: NoteCardFrom = NoteCardFrom.COMMON,
+    onCommentClick: ((NoteShowBean) -> Unit)? = null,
+    isCanNavigate: Boolean = true
+) {
 
     var openBottomSheet by rememberSaveable { mutableStateOf(false) }
     var isExpanded by rememberSaveable { mutableStateOf(true) }
@@ -49,8 +58,13 @@ fun NoteCard(noteShowBean: NoteShowBean, navHostController: NavHostController, f
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .clip(CardDefaults.shape)
             .combinedClickable(
+                enabled = isCanNavigate,
                 onClick = {
-                    navHostController.navigate(route = Screen.InputDetail(noteShowBean.note.noteId))
+                    if (note.parentNoteId != null) {
+                        navHostController.navigate(route = Screen.CommentList(note.parentNoteId!!))
+                    } else {
+                        navHostController.navigate(route = Screen.MemoPreview(noteShowBean.note.noteId))
+                    }
                 },
                 onLongClick = {
                     openBottomSheet = true
@@ -65,12 +79,15 @@ fun NoteCard(noteShowBean: NoteShowBean, navHostController: NavHostController, f
             MarkdownText(
                 markdown = note.content,
                 maxLines = if (isExpanded) 8 else Int.MAX_VALUE,
-                style = SaltTheme.textStyles.paragraph.copy(fontSize = 15.sp, lineHeight = 24.sp), onTagClick = {
-                    if (from == NoteCardFrom.COMMON) {
+                style = SaltTheme.textStyles.paragraph.copy(
+                    fontSize = 16.sp,
+                    lineHeight = 26.sp,
+                    color = SaltTheme.colors.text
+                ), onTagClick = {
+                    if (from == NoteCardFrom.COMMON && isCanNavigate) {
                         navHostController.navigate(Screen.TagDetail(it))
                     }
                 })
-
             // 添加展开/收起按钮
             if (note.content.length > 200) {
                 Spacer(modifier = Modifier.height(24.dp))
@@ -82,6 +99,30 @@ fun NoteCard(noteShowBean: NoteShowBean, navHostController: NavHostController, f
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
+            }
+
+            if (noteShowBean.parentNote != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Gray.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+//                        .border(1.dp, SaltTheme.colors.subText.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+//                        .clickable {
+//                            navHostController.navigate(route = Screen.InputDetail(noteShowBean.parentNote.noteId))
+//                        }
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = noteShowBean.parentNote.content,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                        style = SaltTheme.textStyles.paragraph.copy(
+                            fontSize = 13.sp,
+                            color = SaltTheme.colors.subText
+                        )
+                    )
+                }
             }
 
             if (note.attachments.isNotEmpty()) {
@@ -97,8 +138,14 @@ fun NoteCard(noteShowBean: NoteShowBean, navHostController: NavHostController, f
             )
         }
     }
-    ActionBottomSheet(navHostController, noteShowBean, show = openBottomSheet) {
-        openBottomSheet = false
-    }
+    ActionBottomSheet(
+        navHostController = navHostController,
+        noteShowBean = noteShowBean,
+        show = openBottomSheet,
+        onCommentClick = onCommentClick,
+        onDismissRequest = {
+            openBottomSheet = false
+        }
+    )
 
 }

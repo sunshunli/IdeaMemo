@@ -16,6 +16,9 @@ sealed class Screen {
     data class InputDetail(val id: Long) : Screen()
 
     @Serializable
+    data class MemoPreview(val id: Long) : Screen()
+
+    @Serializable
     object TagList : Screen()
 
     @Serializable
@@ -49,11 +52,14 @@ sealed class Screen {
     object Gallery : Screen()
 
     @Serializable
-    data class PictureDisplay(val pathList: List<String>, val curIndex: Int) : Screen()
+    data class PictureDisplay(val pathList: List<String>, val curIndex: Int, val timestamps: List<Long>) : Screen()
 
     @Serializable
     object MoreInfo : Screen()
 
     @Serializable
-    object LocationList : Screen()
+    object DonatePage : Screen()
+
+    @Serializable
+    data class CommentList(val parentNoteId: Long) : Screen()
 }
