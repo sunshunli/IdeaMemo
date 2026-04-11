@@ -46,7 +46,8 @@ fun NoteCard(
     navHostController: NavHostController,
     from: NoteCardFrom = NoteCardFrom.COMMON,
     onCommentClick: ((NoteShowBean) -> Unit)? = null,
-    isCanNavigate: Boolean = true
+    isCanNavigate: Boolean = true,
+    highlightText: String = ""
 ) {
 
     var openBottomSheet by rememberSaveable { mutableStateOf(false) }
@@ -87,7 +88,9 @@ fun NoteCard(
                     if (from == NoteCardFrom.COMMON && isCanNavigate) {
                         navHostController.navigate(Screen.TagDetail(it))
                     }
-                })
+                },
+                highlightText = highlightText
+            )
             // 添加展开/收起按钮
             if (note.content.length > 200) {
                 Spacer(modifier = Modifier.height(24.dp))

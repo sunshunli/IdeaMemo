@@ -40,7 +40,6 @@ import com.ldlywt.note.R
 import com.ldlywt.note.component.NoteCard
 import com.ldlywt.note.component.NoteCardFrom
 import com.ldlywt.note.ui.page.router.debouncedPopBackStack
-import com.ldlywt.note.utils.SettingsPreferences
 import com.moriafly.salt.ui.SaltTheme
 import kotlinx.coroutines.delay
 
@@ -126,8 +125,13 @@ fun SearchPage(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                items(count = filterList.size, key = { it }) { index ->
-                    NoteCard(noteShowBean = filterList[index], navController, from = NoteCardFrom.SEARCH)
+                items(count = filterList.size, key = { index -> filterList[index].note.noteId }) { index ->
+                    NoteCard(
+                        noteShowBean = filterList[index], 
+                        navHostController = navController, 
+                        from = NoteCardFrom.SEARCH,
+                        highlightText = searchQuery // 传入搜索关键词以实现高亮
+                    )
                 }
                 item {
                     Spacer(modifier = Modifier.height(60.dp))

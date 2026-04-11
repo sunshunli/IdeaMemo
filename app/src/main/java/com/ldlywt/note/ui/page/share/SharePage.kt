@@ -184,7 +184,7 @@ fun SharePage(noteId: Long, navController: NavHostController) {
                                             markdown = note.content,
                                             style = SaltTheme.textStyles.paragraph.copy(fontSize = 15.sp, lineHeight = 24.sp),
                                             modifier = Modifier.fillMaxWidth() // 确保MarkdownText填充可用宽度
-                                        ) {}
+                                        )
                                         if (note.attachments.isNotEmpty()) {
                                             Spacer(modifier = Modifier.height(8.dp))
                                             // 自定义图片显示组件，支持图片加载完成通知

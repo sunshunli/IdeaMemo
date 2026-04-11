@@ -6,6 +6,7 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
+import android.text.style.BackgroundColorSpan
 import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
 import android.text.util.Linkify
@@ -53,6 +54,7 @@ fun MarkdownText(
     onLinkClicked: ((String) -> Unit)? = null,
     onTextLayout: ((numLines: Int) -> Unit)? = null,
     onTagClick: ((String) -> Unit)? = null,
+    highlightText: String = "",
 ) {
     val defaultColor: Color = LocalContentColor.current
     val context: Context = LocalContext.current
@@ -129,7 +131,7 @@ fun MarkdownText(
                 // When selectable, we don't want LinkMovementMethod as it conflicts with selection
                 if (textView.movementMethod is LinkMovementMethod) {
                     textView.movementMethod = null
-                    textView.setTextIsSelectable(true) 
+                    textView.setTextIsSelectable(true)
                 }
             }
 
@@ -140,6 +142,7 @@ fun MarkdownText(
             }
             textView.maxLines = maxLines
             textView.highlightTagsWithClick(onTagClick, isTextSelectable)
+            textView.highlightSearchText(highlightText)
         }
     )
 }
@@ -200,6 +203,24 @@ fun TextView.highlightTagsWithClick(onTagClick: ((String) -> Unit)?, isTextSelec
         this.movementMethod = LinkMovementMethod.getInstance()
         // 避免点击时背景颜色变化
         this.highlightColor = android.graphics.Color.TRANSPARENT
+    }
+}
+
+fun TextView.highlightSearchText(highlightText: String) {
+    if (highlightText.isEmpty()) return
+    val spannable = text as? Spannable ?: return
+    val content = spannable.toString()
+    var start = 0
+    while (start < content.length) {
+        val index = content.indexOf(highlightText, start, ignoreCase = true)
+        if (index == -1) break
+        spannable.setSpan(
+            BackgroundColorSpan(android.graphics.Color.parseColor("#FFD700")), // 金色/黄色高亮
+            index,
+            index + highlightText.length,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        start = index + highlightText.length
     }
 }
 
