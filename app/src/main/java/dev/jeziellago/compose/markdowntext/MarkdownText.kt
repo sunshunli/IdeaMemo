@@ -28,9 +28,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.widget.TextViewCompat
 import coil.ImageLoader
+import com.ldlywt.note.utils.TopicUtils
 import io.noties.markwon.Markwon
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 
 @Composable
 fun MarkdownText(
@@ -150,58 +149,55 @@ fun MarkdownText(
 // TextView 扩展方法，传递回调函数处理点击事件
 fun TextView.highlightTagsWithClick(onTagClick: ((String) -> Unit)?, isTextSelectable: Boolean) {
     val originalText = this.text.toString()
-    val tagList = TopicUtils.getTopicListByString(originalText)
+    
+    // 使用新的正则逻辑获取需要高亮的标签
+    val matcher = TopicUtils.pattern.matcher(originalText)
+    val foundTags = mutableListOf<Pair<Int, Int>>()
+    while (matcher.find()) {
+        foundTags.add(Pair(matcher.start(), matcher.end()))
+    }
 
-    // 如果没有找到标签，直接返回
-    if (tagList.isEmpty()) return
+    if (foundTags.isEmpty()) return
 
     // 创建 SpannableString 用于设置文字的不同样式
     val spannableString = SpannableString(this.text)
-
     val textColor = android.graphics.Color.parseColor("#4D84F7")
 
-    // 遍历匹配到的标签
-    for (tag in tagList) {
-        val startIndex = originalText.indexOf(tag)
-        if (startIndex >= 0) {
-            val endIndex = startIndex + tag.length
+    // 遍历匹配到的标签索引
+    for (tagRange in foundTags) {
+        val startIndex = tagRange.first
+        val endIndex = tagRange.second
+        val tagText = originalText.substring(startIndex, endIndex)
 
-            // 设置文字颜色为蓝色
-            spannableString.setSpan(
-                ForegroundColorSpan(textColor),
-                startIndex,
-                endIndex,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
+        // 设置文字颜色为蓝色
+        spannableString.setSpan(
+            ForegroundColorSpan(textColor),
+            startIndex,
+            endIndex,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
 
-            // 设置点击事件，并重写 updateDrawState 去掉下划线
-            spannableString.setSpan(object : ClickableSpan() {
-                override fun onClick(widget: View) {
-                    // 触发回调，将当前点击的 tag 传递出去
-                    onTagClick?.invoke(tag)
-                }
+        // 设置点击事件，并重写 updateDrawState 去掉下划线
+        spannableString.setSpan(object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                // 触发回调，将当前点击的完整 tag 传递出去 (包含 /)
+                onTagClick?.invoke(tagText)
+            }
 
-                override fun updateDrawState(ds: TextPaint) {
-                    super.updateDrawState(ds)
-                    // 设置文字颜色（如果没有 ForegroundColorSpan 也能用这个）
-                    ds.color = textColor
-                    // 去掉下划线
-                    ds.isUnderlineText = false
-                }
-            }, startIndex, endIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.color = textColor
+                ds.isUnderlineText = false
+            }
+        }, startIndex, endIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
     }
 
     // 将设置好的 SpannableString 应用到 TextView
     this.text = spannableString
 
     // 使 TextView 支持点击
-    if (isTextSelectable) {
-        // When selectable, we don't set LinkMovementMethod as it breaks text selection
-        // CustomTextView handles clicks manually when selectable
-    } else {
+    if (!isTextSelectable) {
         this.movementMethod = LinkMovementMethod.getInstance()
-        // 避免点击时背景颜色变化
         this.highlightColor = android.graphics.Color.TRANSPARENT
     }
 }
@@ -221,21 +217,5 @@ fun TextView.highlightSearchText(highlightText: String) {
             Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
         )
         start = index + highlightText.length
-    }
-}
-
-object TopicUtils {
-
-    private val inputReg = "(\\#[\u4e00-\u9fa5a-zA-Z]+\\d{0,100})[\\w\\s]"
-    val pattern: Pattern = Pattern.compile(inputReg)
-    fun getTopicListByString(text: String): List<String> {
-        val tagList: MutableList<String> = mutableListOf()
-        val matcher: Matcher = pattern.matcher(text)
-        while (matcher.find()) {
-            val tag = text.substring(matcher.start(), matcher.end()).trim { it <= ' ' }
-            tagList.add(tag)
-
-        }
-        return tagList
     }
 }

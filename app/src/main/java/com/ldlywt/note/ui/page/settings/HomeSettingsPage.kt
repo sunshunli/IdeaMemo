@@ -3,7 +3,6 @@
 package com.ldlywt.note.ui.page.settings
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,13 +18,10 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.Feed
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Label
-import androidx.compose.material.icons.outlined.LineStyle
 import androidx.compose.material.icons.outlined.LocalCafe
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material3.AlertDialog
@@ -57,6 +53,7 @@ import androidx.navigation.NavHostController
 import com.google.android.material.color.DynamicColors
 import com.ldlywt.note.R
 import com.ldlywt.note.component.ItemPopup
+import com.ldlywt.note.component.LoadingComponent
 import com.ldlywt.note.ui.page.LocalMemosState
 import com.ldlywt.note.ui.page.LocalTags
 import com.ldlywt.note.ui.page.data.DataManagerViewModel
@@ -78,6 +75,7 @@ import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.UnstableSaltApi
 import com.moriafly.salt.ui.popup.PopupMenuItem
 import com.moriafly.salt.ui.popup.rememberPopupState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -122,6 +120,10 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
     val themeMode by SettingsPreferences.themeMode.collectAsState(SettingsPreferences.ThemeMode.SYSTEM)
     val scope = rememberCoroutineScope()
     var downloadDialogVisible by remember { mutableStateOf(false) }
+
+    var isLoading by remember { mutableStateOf(false) }
+    var isSuccess by remember { mutableStateOf(false) }
+
     val settingList = listOf(
         SettingsBean(
             R.string.random_walk,
@@ -131,6 +133,15 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
             R.string.gallery,
             Icons.Outlined.Photo
         ) { navController.navigate(Screen.Gallery) },
+    )
+
+    LoadingComponent(
+        isLoading = isLoading,
+        isSuccess = isSuccess,
+        onFinished = {
+            isLoading = false
+            isSuccess = false
+        }
     )
 
     LazyColumn(
@@ -231,9 +242,12 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
 
                     Item(
                         onClick = {
-                            lunchIo {
+                            scope.launch {
+                                isLoading = true
+                                isSuccess = false
                                 dataViewModel.fixTag()
-                                toast(R.string.excute_success.str)
+                                isSuccess = true
+                                isLoading = false
                             }
                         },
                         text = R.string.tag_fix.str,
