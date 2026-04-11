@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -74,6 +75,8 @@ fun AllNotesPage(
     var showInputDialog by rememberSaveable { mutableStateOf(false) }
     var showCustomTimePicker by rememberSaveable { mutableStateOf(false) }
     var parentNoteForComment by rememberSaveable { mutableStateOf<NoteShowBean?>(null) }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         showWarnDialog = SettingsPreferences.firstLaunch.first()
@@ -105,8 +108,8 @@ fun AllNotesPage(
 
         Box {
             LazyColumn(
-                Modifier
-                    .fillMaxSize()
+                state = listState,
+                modifier = Modifier.fillMaxSize()
             ) {
                 items(count = noteState.notes.size, key = { noteState.notes[it].note.noteId }) { index ->
                     NoteCard(
@@ -141,6 +144,9 @@ fun AllNotesPage(
                 hideBottomNavBar.invoke(false)
                 showInputDialog = false
                 parentNoteForComment = null
+                coroutineScope.launch {
+                    listState.animateScrollToItem(0)
+                }
             }
         }
     }

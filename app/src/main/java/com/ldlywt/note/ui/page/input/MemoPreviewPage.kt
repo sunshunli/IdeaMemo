@@ -169,6 +169,7 @@ fun MemoPreviewPage(memoId: Long) {
                         lineHeight = 26.sp,
                         color = SaltTheme.colors.text
                     ),
+                    isTextSelectable = true,
                 )
             }
         }

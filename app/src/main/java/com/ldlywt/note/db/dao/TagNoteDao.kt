@@ -84,15 +84,15 @@ interface TagNoteDao {
     fun getNoteShowBeanByIdFlow(noteId: Long): Flow<NoteShowBean?>
 
     @Transaction
-    @Query("SELECT * FROM Note WHERE date(create_time / 1000, 'unixepoch') = :selectedDate")
+    @Query("SELECT * FROM Note WHERE date(create_time / 1000, 'unixepoch', 'localtime') = :selectedDate")
     fun getNoteShowOnDate(selectedDate: String): List<NoteShowBean>
 
     @Transaction
-    @Query("SELECT DISTINCT strftime('%Y', datetime(create_time/1000, 'unixepoch')) AS year FROM Note ORDER BY year DESC")
+    @Query("SELECT DISTINCT strftime('%Y', datetime(create_time/1000, 'unixepoch', 'localtime')) AS year FROM Note ORDER BY year DESC")
     suspend fun getAllDistinctYears(): List<String>
 
     @Transaction
-    @Query("SELECT * FROM Note WHERE strftime('%Y', datetime(create_time/1000, 'unixepoch')) = :year")
+    @Query("SELECT * FROM Note WHERE strftime('%Y', datetime(create_time/1000, 'unixepoch', 'localtime')) = :year")
     fun getNotesByYear(year: String): Flow<List<NoteShowBean>>
 
     @Query("SELECT * FROM note WHERE create_time BETWEEN :startTime AND :endTime AND is_deleted = 0 ORDER BY create_time DESC")

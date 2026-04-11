@@ -1,6 +1,7 @@
 package com.ldlywt.note.ui.page.search
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,6 +41,7 @@ import com.ldlywt.note.component.NoteCard
 import com.ldlywt.note.component.NoteCardFrom
 import com.ldlywt.note.ui.page.router.debouncedPopBackStack
 import com.ldlywt.note.utils.SettingsPreferences
+import com.moriafly.salt.ui.SaltTheme
 import kotlinx.coroutines.delay
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -54,7 +57,7 @@ fun SearchPage(
     val focusRequester = remember { FocusRequester() }
     val filterList by searchViewModel.dataFlow.collectAsState(initial = emptyList())
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().background(SaltTheme.colors.background)) {
         SearchBar(
             inputField = {
                 SearchBarDefaults.InputField(
@@ -68,13 +71,17 @@ fun SearchPage(
                     expanded = searchBarExpanded,
                     onExpandedChange = { },
                     placeholder = {
-                        Text(stringResource(id = R.string.search_hint))
+                        Text(
+                            text = stringResource(id = R.string.search_hint),
+                            color = SaltTheme.colors.subText
+                        )
                     },
                     leadingIcon = {
                         IconButton(onClick = { navController.debouncedPopBackStack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                                contentDescription = stringResource(id = R.string.back)
+                                contentDescription = stringResource(id = R.string.back),
+                                tint = SaltTheme.colors.text
                             )
                         }
                     },
@@ -83,16 +90,21 @@ fun SearchPage(
                             IconButton(onClick = {
                                 searchViewModel.clearSearchQuery()
                             }) {
-                                Icon(imageVector = Icons.Rounded.Clear, contentDescription = "")
+                                Icon(
+                                    imageVector = Icons.Rounded.Clear,
+                                    contentDescription = "",
+                                    tint = SaltTheme.colors.text
+                                )
                             }
-//                            IconButton(onClick = {  }) {
-//                                Icon(
-//                                    imageVector = Icons.Rounded.MoreVert,
-//                                    contentDescription =""
-//                                )
-//                            }
                         }
                     },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = SaltTheme.colors.text,
+                        unfocusedTextColor = SaltTheme.colors.text,
+                        cursorColor = SaltTheme.colors.text,
+                        focusedContainerColor = SaltTheme.colors.subBackground,
+                        unfocusedContainerColor = SaltTheme.colors.subBackground
+                    )
                 )
             },
             modifier = Modifier
@@ -100,10 +112,14 @@ fun SearchPage(
                 .focusRequester(focusRequester),
             expanded = searchBarExpanded,
             onExpandedChange = { if (!it) navController.debouncedPopBackStack() },
+            colors = SearchBarDefaults.colors(
+                containerColor = SaltTheme.colors.subBackground,
+                dividerColor = SaltTheme.colors.stroke
+            )
         ) {
             LazyColumn(
                 Modifier
-//                    .background(SaltTheme.colors.background)
+                    .background(SaltTheme.colors.background)
                     .fillMaxSize()
                     .padding()
             ) {

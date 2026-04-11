@@ -49,7 +49,7 @@ fun CardCalender(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {
-                    navHostController.navigate(route = Screen.InputDetail(noteShowBean.note.noteId))
+                    navHostController.navigate(route = Screen.MemoPreview(noteShowBean.note.noteId))
                 },
                 onLongClick = {
                     openBottomSheet = true
