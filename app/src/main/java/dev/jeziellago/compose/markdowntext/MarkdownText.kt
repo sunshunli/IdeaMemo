@@ -89,7 +89,9 @@ fun MarkdownText(
 
                 setTextIsSelectable(isTextSelectable)
 
-                movementMethod = LinkMovementMethod.getInstance()
+                if (!isTextSelectable) {
+                    movementMethod = LinkMovementMethod.getInstance()
+                }
 
                 if (truncateOnTextOverflow) enableTextOverflow()
 
@@ -123,20 +125,27 @@ fun MarkdownText(
             markdownRender.setMarkdown(textView, markdown)
             if (disableLinkMovementMethod) {
                 textView.movementMethod = null
+            } else if (isTextSelectable) {
+                // When selectable, we don't want LinkMovementMethod as it conflicts with selection
+                if (textView.movementMethod is LinkMovementMethod) {
+                    textView.movementMethod = null
+                    textView.setTextIsSelectable(true) 
+                }
             }
+
             if (onTextLayout != null) {
                 textView.post {
                     onTextLayout(textView.lineCount)
                 }
             }
             textView.maxLines = maxLines
-            textView.highlightTagsWithClick(onTagClick)
+            textView.highlightTagsWithClick(onTagClick, isTextSelectable)
         }
     )
 }
 
 // TextView 扩展方法，传递回调函数处理点击事件
-fun TextView.highlightTagsWithClick(onTagClick: ((String) -> Unit)?) {
+fun TextView.highlightTagsWithClick(onTagClick: ((String) -> Unit)?, isTextSelectable: Boolean) {
     val originalText = this.text.toString()
     val tagList = TopicUtils.getTopicListByString(originalText)
 
@@ -144,7 +153,7 @@ fun TextView.highlightTagsWithClick(onTagClick: ((String) -> Unit)?) {
     if (tagList.isEmpty()) return
 
     // 创建 SpannableString 用于设置文字的不同样式
-    val spannableString = SpannableString(originalText)
+    val spannableString = SpannableString(this.text)
 
     val textColor = android.graphics.Color.parseColor("#4D84F7")
 
@@ -184,10 +193,14 @@ fun TextView.highlightTagsWithClick(onTagClick: ((String) -> Unit)?) {
     this.text = spannableString
 
     // 使 TextView 支持点击
-    this.movementMethod = LinkMovementMethod.getInstance()
-
-    // 避免点击时背景颜色变化，可以加上这一行
-    this.highlightColor = android.graphics.Color.TRANSPARENT
+    if (isTextSelectable) {
+        // When selectable, we don't set LinkMovementMethod as it breaks text selection
+        // CustomTextView handles clicks manually when selectable
+    } else {
+        this.movementMethod = LinkMovementMethod.getInstance()
+        // 避免点击时背景颜色变化
+        this.highlightColor = android.graphics.Color.TRANSPARENT
+    }
 }
 
 object TopicUtils {
