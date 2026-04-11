@@ -63,6 +63,7 @@ import com.ldlywt.note.utils.Constant
 import com.ldlywt.note.utils.DonateUtils
 import com.ldlywt.note.utils.SettingsPreferences
 import com.ldlywt.note.utils.lunchIo
+import com.ldlywt.note.utils.openUrl
 import com.ldlywt.note.utils.str
 import com.ldlywt.note.utils.toYYMMDD
 import com.ldlywt.note.utils.toast
@@ -274,7 +275,13 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
                         text = R.string.new_version.str,
                         iconPainter = rememberVectorPainter(Icons.Outlined.Download),
                     )
-
+                    Item(
+                        onClick = {
+                            context.openUrl("https://xhslink.com/m/6eJ9xE368Ja")
+                        },
+                        text = R.string.xiaohongshu.str,
+                        iconPainter = painterResource(id = R.drawable.ic_xiaohongshu),
+                    )
                     Item(
                         onClick = {
                             navController.navigate(Screen.MoreInfo) { launchSingleTop = true }

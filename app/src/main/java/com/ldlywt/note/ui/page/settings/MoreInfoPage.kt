@@ -78,52 +78,12 @@ fun ContactDialog(block: () -> Unit) {
     )
 }
 
-@Composable
-fun FeedbackDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    AlertDialog(
-        containerColor = SaltTheme.colors.background,
-        onDismissRequest = { onDismiss() },
-        title = { androidx.compose.material3.Text(stringResource(R.string.feedback_title), color = SaltTheme.colors.text) },
-        text = {
-            Column {
-                Item(
-                    onClick = {
-                        openMail(context)
-                        onDismiss()
-                    },
-                    text = R.string.feedback_email.str,
-                    iconPainter = rememberVectorPainter(Icons.Outlined.Email),
-                    arrowType = ItemArrowType.Arrow
-                )
-                Item(
-                    onClick = {
-                        context.openUrl("https://zcnbe28t548g.feishu.cn/share/base/form/shrcnJFyKGWV5TjnIVobVWmsGzc")
-                        onDismiss()
-                    },
-                    text = stringResource(R.string.feedback_lark),
-                    iconPainter = rememberVectorPainter(Icons.Outlined.Feed),
-                    arrowType = ItemArrowType.Arrow
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = {
-                onDismiss()
-            }) {
-                Text(R.string.cancel.str, color = Color.White)
-            }
-        }
-    )
-}
-
 @OptIn(ExperimentalMaterial3Api::class, UnstableSaltApi::class)
 @Composable
 fun MoreInfoPage(
     navController: NavHostController
 ) {
     val context = LocalContext.current
-    var feedbackDialogVisible by remember { mutableStateOf(false) }
 
     val settingList = listOf(
         SettingsBean(R.string.share_app, Icons.Outlined.Share) { shareApp(context) },
@@ -132,7 +92,6 @@ fun MoreInfoPage(
                 context
             )
         },
-        SettingsBean(R.string.feedback_title, Icons.Outlined.Feedback) { feedbackDialogVisible = true },
     )
     val aboutList = listOf(
         SettingsBean(R.string.user_agree, Icons.AutoMirrored.Outlined.Assignment) {
@@ -228,13 +187,6 @@ fun MoreInfoPage(
                     text = it.title.str,
                     iconPainter = rememberVectorPainter(it.imageVector),
                 )
-            }
-        }
-
-        // Show feedback dialog when feedbackDialogVisible is true
-        if (feedbackDialogVisible) {
-            FeedbackDialog {
-                feedbackDialogVisible = false
             }
         }
     }
