@@ -3,9 +3,10 @@ package com.ldlywt.note.component
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -13,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
@@ -32,28 +32,22 @@ fun DraggableCard(
     content: @Composable () -> Unit
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val swipeXLeft = -(screenWidth.value * 3.2).toFloat()
-    val swipeXRight = (screenWidth.value * 3.2).toFloat()
-    val swipeYTop = -1000f
-    val swipeYBottom = 1000f
+    // 增加飞出距离，确保彻底划走
+    val swipeXRight = (screenWidth.value * 1.5).toFloat() 
     val swipeX = remember { Animatable(0f) }
-    val swipeY = remember { Animatable(0f) }
-    swipeX.updateBounds(swipeXLeft, swipeXRight)
-    swipeY.updateBounds(swipeYTop, swipeYBottom)
-    if (abs(swipeX.value) < swipeXRight - 50f) {
+    
+    // 只要卡片还没飞出可见范围，就渲染它
+    if (abs(swipeX.value) < swipeXRight) {
         val rotationFraction = (swipeX.value / 60).coerceIn(-40f, 40f)
         Card(
-//            elevation = 16.dp,
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             modifier = modifier
                 .dragContent(
                     swipeX = swipeX,
-                    swipeY = swipeY,
-                    maxX = swipeXRight,
-                    onSwiped = { _, _ -> }
+                    maxX = swipeXRight
                 )
                 .graphicsLayer(
                     translationX = swipeX.value,
-                    translationY = swipeY.value,
                     rotationZ = rotationFraction,
                 )
                 .clip(RoundedCornerShape(16.dp))
@@ -61,7 +55,7 @@ fun DraggableCard(
             content()
         }
     } else {
-        // on swiped
+        // 彻底划走后通知上层
         val swipeResult = if (swipeX.value > 0) SwipeResult.ACCEPTED else SwipeResult.REJECTED
         onSwiped(swipeResult, item)
     }
@@ -69,45 +63,32 @@ fun DraggableCard(
 
 fun Modifier.dragContent(
     swipeX: Animatable<Float, AnimationVector1D>,
-    swipeY: Animatable<Float, AnimationVector1D>,
-    maxX: Float,
-    onSwiped: (Any, Any) -> Unit
+    maxX: Float
 ): Modifier = composed {
     val coroutineScope = rememberCoroutineScope()
     pointerInput(Unit) {
-        this.detectDragGestures(
+        detectHorizontalDragGestures(
             onDragCancel = {
-                coroutineScope.apply {
-                    launch { swipeX.animateTo(0f) }
-                    launch { swipeY.animateTo(0f) }
-                }
+                coroutineScope.launch { swipeX.animateTo(0f) }
             },
             onDragEnd = {
                 coroutineScope.apply {
-                    // if it's swiped 1/4th
-                    if (abs(swipeX.targetValue) < abs(maxX) / 4) {
-                        launch {
-                            swipeX.animateTo(0f, tween(400))
-                        }
-                        launch {
-                            swipeY.animateTo(0f, tween(400))
-                        }
+                    // 如果拖拽距离不足 1/4，回弹；否则飞出
+                    if (abs(swipeX.value) < abs(maxX) / 4) {
+                        launch { swipeX.animateTo(0f, tween(300)) }
                     } else {
                         launch {
-                            if (swipeX.targetValue > 0) {
-                                swipeX.animateTo(maxX, tween(400))
-                            } else {
-                                swipeX.animateTo(-maxX, tween(400))
-                            }
+                            val target = if (swipeX.value > 0) maxX * 1.5f else -maxX * 1.5f
+                            swipeX.animateTo(target, tween(300))
                         }
                     }
                 }
             }
         ) { change, dragAmount ->
-            change.consumePositionChange()
-            coroutineScope.apply {
-                launch { swipeX.animateTo(swipeX.targetValue + dragAmount.x) }
-                launch { swipeY.animateTo(swipeY.targetValue + dragAmount.y) }
+            change.consume()
+            coroutineScope.launch {
+                // 使用 snapTo 解决阻尼感，让卡片紧随手指
+                swipeX.snapTo(swipeX.value + dragAmount)
             }
         }
     }

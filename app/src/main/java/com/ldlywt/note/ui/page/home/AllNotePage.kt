@@ -1,42 +1,42 @@
 package com.ldlywt.note.ui.page.home
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AvTimer
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tag
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.ldlywt.note.R
 import com.ldlywt.note.bean.NoteShowBean
@@ -70,13 +71,27 @@ fun AllNotesPage(
     hideBottomNavBar: ((Boolean) -> Unit)
 ) {
     val noteState: NoteState = LocalMemosState.current
-    var openFilterBottomSheet by rememberSaveable { mutableStateOf(false) }
     var showWarnDialog by rememberSaveable { mutableStateOf(false) }
     var showInputDialog by rememberSaveable { mutableStateOf(false) }
-    var showCustomTimePicker by rememberSaveable { mutableStateOf(false) }
+    var showDateRangePicker by rememberSaveable { mutableStateOf(false) }
     var parentNoteForComment by rememberSaveable { mutableStateOf<NoteShowBean?>(null) }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+
+    val sortTime by SharedPreferencesUtils.sortTime.collectAsState(SortTime.UPDATE_TIME_DESC)
+    var lastScrolledSortTime by rememberSaveable { mutableStateOf<SortTime?>(null) }
+
+    // Ensure list stays at the top when sorting changes.
+    // We trigger this when sortTime changes OR when notes update, 
+    // to counter LazyColumn's attempts to maintain scroll position by key.
+    LaunchedEffect(sortTime, noteState.notes) {
+        if (lastScrolledSortTime != sortTime) {
+            listState.scrollToItem(0)
+            if (noteState.notes.isNotEmpty()) {
+                lastScrolledSortTime = sortTime
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         showWarnDialog = SettingsPreferences.firstLaunch.first()
@@ -85,10 +100,12 @@ fun AllNotesPage(
     RYScaffold(
         title = R.string.all_note.str, navController = null,
         actions = {
-            toolbar(navController, filterBlock = {
-                openFilterBottomSheet = true
-            }, dateRangeBlock = {
-                showCustomTimePicker = true
+            Toolbar(navController, dateRangeBlock = {
+                showDateRangePicker = true
+            }, onSortChanged = {
+                coroutineScope.launch {
+                    listState.animateScrollToItem(0)
+                }
             })
         },
         floatingActionButton = {
@@ -111,7 +128,10 @@ fun AllNotesPage(
                 state = listState,
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(count = noteState.notes.size, key = { noteState.notes[it].note.noteId }) { index ->
+                items(
+                    count = noteState.notes.size,
+                    key = { noteState.notes[it].note.noteId }
+                ) { index ->
                     NoteCard(
                         noteShowBean = noteState.notes[index],
                         navHostController = navController,
@@ -151,12 +171,6 @@ fun AllNotesPage(
         }
     }
 
-    HomeFilterBottomSheet(
-        show = openFilterBottomSheet,
-        onDismissRequest = {
-            openFilterBottomSheet = false
-        })
-
     if (showWarnDialog) {
         FirstTimeWarmDialog {
             lunchMain {
@@ -166,20 +180,17 @@ fun AllNotesPage(
         }
     }
 
-    // 添加自定义时间选择对话框
-    if (showCustomTimePicker) {
-        CustomTimePickerDialog(
-            onDismissRequest = { showCustomTimePicker = false },
+    if (showDateRangePicker) {
+        ModernDateRangePicker(
+            onDismissRequest = { showDateRangePicker = false },
             onConfirm = { startTime, endTime ->
-                lunchMain {
-                    navController.navigate(
-                        Screen.DateRangePage(
-                            startTime = startTime,
-                            endTime = endTime
-                        )
+                navController.navigate(
+                    Screen.DateRangePage(
+                        startTime = startTime,
+                        endTime = endTime
                     )
-                }
-                showCustomTimePicker = false
+                )
+                showDateRangePicker = false
             }
         )
     }
@@ -187,16 +198,12 @@ fun AllNotesPage(
 }
 
 @Composable
-private fun toolbar(
+private fun Toolbar(
     navController: NavHostController,
-    filterBlock: () -> Unit,
-    dateRangeBlock: () -> Unit
+    dateRangeBlock: () -> Unit,
+    onSortChanged: () -> Unit
 ) {
-    IconButton(
-        onClick = {
-            dateRangeBlock()
-        }
-    ) {
+    IconButton(onClick = dateRangeBlock) {
         Icon(
             contentDescription = R.string.date_range.str,
             imageVector = Icons.Outlined.AvTimer,
@@ -231,184 +238,167 @@ private fun toolbar(
         )
     }
 
-    IconButton(
-        onClick = {
-            filterBlock()
-        },
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.FilterList,
-            contentDescription = "sort",
-            tint = SaltTheme.colors.text
-        )
-    }
+    SortFilterMenu(
+        onSortChanged = {
+            onSortChanged()
+        }
+    )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeFilterBottomSheet(show: Boolean, onDismissRequest: () -> Unit) {
-
-    val sortTime = SharedPreferencesUtils.sortTime.collectAsState(SortTime.UPDATE_TIME_DESC)
+fun SortFilterMenu(onSortChanged: () -> Unit = {}) {
+    var expanded by remember { mutableStateOf(false) }
+    val sortTime by SharedPreferencesUtils.sortTime.collectAsState(SortTime.UPDATE_TIME_DESC)
     val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState()
 
-    if (show) {
-        ModalBottomSheet(onDismissRequest = onDismissRequest, sheetState = sheetState) {
-            Column(Modifier.fillMaxWidth()) {
-                TextButton(modifier = Modifier.fillMaxWidth(), onClick = {
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = Icons.Outlined.FilterList,
+                contentDescription = "sort",
+                tint = SaltTheme.colors.text
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(SaltTheme.colors.popup)
+        ) {
+            SortMenuItem(
+                text = stringResource(R.string.update_time_desc),
+                selected = sortTime == SortTime.UPDATE_TIME_DESC,
+                onClick = {
                     scope.launch {
                         SharedPreferencesUtils.updateSortTime(SortTime.UPDATE_TIME_DESC)
-                        sheetState.hide()
-                        onDismissRequest()
-                    }
-                }) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 24.dp, end = 24.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = stringResource(R.string.update_time_desc))
-                        Spacer(modifier = Modifier.weight(1f))
-                        Checkbox(checked = sortTime.value == SortTime.UPDATE_TIME_DESC, null)
+                        expanded = false
+                        onSortChanged()
                     }
                 }
-                TextButton(modifier = Modifier.fillMaxWidth(), onClick = {
+            )
+            SortMenuItem(
+                text = stringResource(R.string.update_time_asc),
+                selected = sortTime == SortTime.UPDATE_TIME_ASC,
+                onClick = {
                     scope.launch {
                         SharedPreferencesUtils.updateSortTime(SortTime.UPDATE_TIME_ASC)
-                        sheetState.hide()
-                        onDismissRequest()
-                    }
-                }) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 24.dp, end = 24.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = stringResource(R.string.update_time_asc))
-                        Spacer(modifier = Modifier.weight(1f))
-                        Checkbox(checked = sortTime.value == SortTime.UPDATE_TIME_ASC, null)
+                        expanded = false
+                        onSortChanged()
                     }
                 }
-                TextButton(modifier = Modifier.fillMaxWidth(), onClick = {
+            )
+            SortMenuItem(
+                text = stringResource(R.string.create_time_desc),
+                selected = sortTime == SortTime.CREATE_TIME_DESC,
+                onClick = {
                     scope.launch {
                         SharedPreferencesUtils.updateSortTime(SortTime.CREATE_TIME_DESC)
-                        sheetState.hide()
-                        onDismissRequest()
-                    }
-                }) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 24.dp, end = 24.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = stringResource(R.string.create_time_desc))
-                        Spacer(modifier = Modifier.weight(1f))
-                        Checkbox(checked = sortTime.value == SortTime.CREATE_TIME_DESC, null)
+                        expanded = false
+                        onSortChanged()
                     }
                 }
-                TextButton(onClick = {
+            )
+            SortMenuItem(
+                text = stringResource(R.string.create_time_asc),
+                selected = sortTime == SortTime.CREATE_TIME_ASC,
+                onClick = {
                     scope.launch {
                         SharedPreferencesUtils.updateSortTime(SortTime.CREATE_TIME_ASC)
-                        sheetState.hide()
-                        onDismissRequest()
-                    }
-                }) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 24.dp, end = 24.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = stringResource(R.string.create_time_asc))
-                        Spacer(modifier = Modifier.weight(1f))
-                        Checkbox(checked = sortTime.value == SortTime.CREATE_TIME_ASC, null)
+                        expanded = false
+                        onSortChanged()
                     }
                 }
-                Spacer(modifier = Modifier.height(40.dp))
-            }
+            )
         }
     }
 }
 
+@Composable
+fun SortMenuItem(text: String, selected: Boolean, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = text,
+                    color = if (selected) SaltTheme.colors.highlight else SaltTheme.colors.text,
+                    fontSize = 14.sp
+                )
+                if (selected) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = null,
+                        tint = SaltTheme.colors.highlight,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        },
+        onClick = onClick
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomTimePickerDialog(
+fun ModernDateRangePicker(
     onDismissRequest: () -> Unit,
     onConfirm: (Long, Long) -> Unit
 ) {
-    var startDateText by rememberSaveable { mutableStateOf("") }
-    var endDateText by rememberSaveable { mutableStateOf("") }
-    var startDateError by rememberSaveable { mutableStateOf(false) }
-    var endDateError by rememberSaveable { mutableStateOf(false) }
+    val dateRangePickerState = rememberDateRangePickerState()
 
-    AlertDialog(
+    DatePickerDialog(
         onDismissRequest = onDismissRequest,
-        containerColor = SaltTheme.colors.popup, // 设置容器背景颜色
-        title = { Text(stringResource(R.string.select_date)) },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState())
-            ) {
-                Text(stringResource(R.string.start_time))
-                TextField(
-                    value = startDateText,
-                    onValueChange = {
-                        startDateText = it
-                        startDateError = false
-                    },
-                    placeholder = { Text("20250101") },
-                    isError = startDateError,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                    ),
-                )
-                if (startDateError) {
-                    Text(
-                        text = stringResource(R.string.input_correct_date),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(stringResource(R.string.end_date))
-                TextField(
-                    value = endDateText,
-                    onValueChange = {
-                        endDateText = it
-                        endDateError = false
-                    },
-                    placeholder = { Text("20250909") },
-                    isError = endDateError,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                    ),
-                )
-                if (endDateError) {
-                    Text(
-                        text = stringResource(R.string.input_correct_date),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
-        },
         confirmButton = {
-            TextButton(onClick = {
-                // ... (rest of the code for confirm button)
-            }) {
+            TextButton(
+                onClick = {
+                    val start = dateRangePickerState.selectedStartDateMillis
+                    val end = dateRangePickerState.selectedEndDateMillis
+                    if (start != null && end != null) {
+                        // end is the start of the last selected day (00:00:00 UTC).
+                        // Add 24 hours (minus 1ms) to include the entire last day up to 23:59:59.999.
+                        onConfirm(start, end + 86399999L)
+                    }
+                },
+                enabled = dateRangePickerState.selectedStartDateMillis != null &&
+                        dateRangePickerState.selectedEndDateMillis != null
+            ) {
                 Text(stringResource(R.string.confirm))
             }
-        }
-    )
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+        colors = DatePickerDefaults.colors(
+            containerColor = SaltTheme.colors.background,
+        )
+    ) {
+        DateRangePicker(
+            state = dateRangePickerState,
+            modifier = Modifier.height(height = 500.dp),
+            title = {
+                Text(
+                    text = stringResource(R.string.select_date),
+                    modifier = Modifier.padding(start = 24.dp, top = 16.dp)
+                )
+            },
+            headline = {
+                Text(
+                    text = dateRangePickerState.displayMode.toString(),
+                    modifier = Modifier.padding(start = 24.dp, bottom = 8.dp)
+                )
+            },
+            showModeToggle = false,
+            colors = DatePickerDefaults.colors(
+                containerColor = SaltTheme.colors.background,
+                titleContentColor = SaltTheme.colors.text,
+                headlineContentColor = SaltTheme.colors.text,
+                selectedDayContainerColor = SaltTheme.colors.highlight,
+                dayContentColor = SaltTheme.colors.text,
+                selectedDayContentColor = Color.White,
+                todayContentColor = SaltTheme.colors.highlight,
+                dayInSelectionRangeContainerColor = SaltTheme.colors.highlight.copy(alpha = 0.15f)
+            )
+        )
+    }
 }
