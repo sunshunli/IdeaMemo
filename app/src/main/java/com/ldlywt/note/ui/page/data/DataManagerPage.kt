@@ -106,15 +106,7 @@ fun DataManagerPage(
     val jianGuoCloudSwitchState = SharedPreferencesUtils.davLoginSuccess.collectAsState(false)
     val isLogin = viewModel.isLogin
 
-    fun navToWebdavConfigPage() {
-        navController.navigate(Screen.DataCloudConfig)
-    }
-
     fun exportToWebdav() {
-        if (isLogin) {
-            navToWebdavConfigPage()
-            return
-        }
         lunchMain {
             isLoading = true
             val resultStr = viewModel.exportToWebdav(context)
@@ -124,10 +116,6 @@ fun DataManagerPage(
     }
 
     fun restoreForWebdav() {
-        if (isLogin) {
-            navToWebdavConfigPage()
-            return
-        }
         lunchMain {
             isLoading = true
             val list: List<DavData> = viewModel.restoreForWebdav()
@@ -274,12 +262,13 @@ fun DataManagerPage(
                         showChoseFolderDialog = true
                     } else {
                         val isChecked = autoBackSwitchState.value
-                        if (isChecked) {
-                            scope.launch {
+                        scope.launch {
+                            if (isChecked) {
                                 SharedPreferencesUtils.updateLocalAutoBackup(false)
                                 SharedPreferencesUtils.updateLocalBackUri(null)
+                            } else {
+                                SharedPreferencesUtils.updateLocalAutoBackup(true)
                             }
-
                         }
                     }
                 },
@@ -455,6 +444,15 @@ fun AccountInputDialog(
 ) {
 
     val scope = rememberCoroutineScope()
+
+    val initialServerUrl by SharedPreferencesUtils.davServerUrl.collectAsState("")
+    val initialUsername by SharedPreferencesUtils.davUserName.collectAsState(null)
+    val initialPassword by SharedPreferencesUtils.davPassword.collectAsState(null)
+
+    var serverUrl by remember(initialServerUrl) { mutableStateOf(initialServerUrl ?: "") }
+    var username by remember(initialUsername) { mutableStateOf(initialUsername ?: "") }
+    var password by remember(initialPassword) { mutableStateOf(initialPassword ?: "") }
+
     BasicDialog(
         onDismissRequest = onDismissRequest,
         properties = properties
@@ -465,36 +463,26 @@ fun AccountInputDialog(
 
         ItemTitle(text = R.string.webdav_config.str)
 
-        val serverUrl = SharedPreferencesUtils.davServerUrl.collectAsState("")
-        val username = SharedPreferencesUtils.davUserName.collectAsState(null)
-        val password = SharedPreferencesUtils.davPassword.collectAsState(null)
-//        val focusRequester = remember { FocusRequester() }
         ItemEdit(
-            text = serverUrl.value ?: "",
+            text = serverUrl,
             onChange = {
-                scope.launch {
-                    SharedPreferencesUtils.updateDavServerUrl(it)
-                }
+                serverUrl = it
             },
             hint = stringResource(R.string.server_url)
         )
 
         ItemEdit(
-            text = username.value ?: "",
+            text = username,
             onChange = {
-                scope.launch {
-                    SharedPreferencesUtils.updateDavUserName(it)
-                }
+                username = it
             },
             hint = R.string.username.str
         )
 
         ItemEditPassword(
-            text = password.value ?: "",
+            text = password,
             onChange = {
-                scope.launch {
-                    SharedPreferencesUtils.updateDavPassword(it)
-                }
+                password = it
             },
             hint = R.string.password.str
         )
@@ -502,23 +490,18 @@ fun AccountInputDialog(
 //            focusRequester.requestFocus()
         }
         ItemOutHalfSpacer()
-        Row(
-            modifier = Modifier.padding(horizontal = SaltTheme.dimens.outerHorizontalPadding)
-        ) {
-            com.moriafly.salt.ui.TextButton(
-                onClick = {
-                    onDismissRequest()
-                },
-                text = stringResource(id = R.string.cancel)
-            )
-            Spacer(modifier = Modifier.width(SaltTheme.dimens.innerVerticalPadding))
-            com.moriafly.salt.ui.TextButton(
-                onClick = {
+        com.moriafly.salt.ui.TextButton(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            onClick = {
+                scope.launch {
+                    SharedPreferencesUtils.updateDavServerUrl(serverUrl)
+                    SharedPreferencesUtils.updateDavUserName(username)
+                    SharedPreferencesUtils.updateDavPassword(password)
                     onConfirm()
-                },
-                text = stringResource(id = R.string.confirm)
-            )
-        }
+                }
+            },
+            text = stringResource(id = R.string.confirm)
+        )
         ItemOutSpacer()
     }
 }

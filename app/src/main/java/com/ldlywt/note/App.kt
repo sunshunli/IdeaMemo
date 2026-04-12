@@ -1,7 +1,6 @@
 package com.ldlywt.note
 
 import android.app.Application
-import androidx.lifecycle.asLiveData
 import com.ldlywt.note.backup.BackupScheduler
 import com.ldlywt.note.db.repo.TagNoteRepo
 import com.ldlywt.note.utils.SettingsPreferences
@@ -10,8 +9,9 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 fun getAppName(): String {
@@ -22,17 +22,23 @@ fun getAppName(): String {
 @HiltAndroidApp
 class App : Application() {
 
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
     override fun onCreate() {
         instance = this
         super.onCreate()
-        val localAutoBackup = SharedPreferencesUtils.localAutoBackup.asLiveData().value
-        if (localAutoBackup == true) {
-            BackupScheduler.scheduleDailyBackup(this)
-        } else {
-            BackupScheduler.cancelDailyBackup(this)
+
+        applicationScope.launch {
+            SharedPreferencesUtils.localAutoBackup.collect { enabled ->
+                if (enabled) {
+                    BackupScheduler.scheduleDailyBackup(this@App)
+                } else {
+                    BackupScheduler.cancelDailyBackup(this@App)
+                }
+            }
         }
 
-        GlobalScope.launch(Dispatchers.Main) {
+        applicationScope.launch {
             SettingsPreferences.themeMode.collect {
                 SettingsPreferences.applyAppCompatThemeMode(it)
             }

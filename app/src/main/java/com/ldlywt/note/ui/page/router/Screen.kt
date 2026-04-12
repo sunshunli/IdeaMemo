@@ -43,9 +43,6 @@ sealed class Screen {
     object DataManager : Screen()
 
     @Serializable
-    object DataCloudConfig : Screen()
-
-    @Serializable
     object RandomWalk : Screen()
 
     @Serializable

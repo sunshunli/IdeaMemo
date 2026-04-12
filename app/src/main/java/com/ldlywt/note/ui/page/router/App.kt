@@ -19,7 +19,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.ldlywt.note.ui.page.PictureDisplayPage
-import com.ldlywt.note.ui.page.data.DataCloudConfigPage
 import com.ldlywt.note.ui.page.data.DataManagerPage
 import com.ldlywt.note.ui.page.input.MemoInputPage
 import com.ldlywt.note.ui.page.input.MemoPreviewPage
@@ -138,12 +137,6 @@ fun NavHostContainer(
         composable<Screen.DataManager> {
             DataManagerPage(navController = navController)
         }
-        composable<Screen.DataCloudConfig> {
-            DataCloudConfigPage(navController = navController)
-        }
-//        composable<Screen.LocationList> {
-//            LocationListPage(navHostController = navController)
-//        }
         composable<Screen.MoreInfo> {
             MoreInfoPage(navController = navController)
         }
