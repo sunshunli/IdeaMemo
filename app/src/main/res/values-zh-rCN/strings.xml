@@ -134,4 +134,9 @@
 
     <string name="donate_intro_title">IdeaMemo是我业余时间肝出来的项目，开源并且一直免费。</string>
     <string name="donate_intro_desc">开发者经常下班熬夜修bug，赞助一杯冰美式咖啡，催促开发者更快修Bug。</string>
+
+    <string name="language_switcher_text">语言设置</string>
+    <string name="language_chinese">简体中文</string>
+    <string name="language_english">English</string>
+    <string name="language_traditional_chinese">繁體中文</string>
 </resources>

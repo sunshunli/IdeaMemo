@@ -24,17 +24,16 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.outlined.LocalCafe
 import androidx.compose.material.icons.outlined.Photo
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,12 +60,11 @@ import com.ldlywt.note.ui.page.main.MainActivity
 import com.ldlywt.note.ui.page.router.Screen
 import com.ldlywt.note.utils.Constant
 import com.ldlywt.note.utils.DonateUtils
+import com.ldlywt.note.utils.LanguageUtils
 import com.ldlywt.note.utils.SettingsPreferences
-import com.ldlywt.note.utils.lunchIo
 import com.ldlywt.note.utils.openUrl
 import com.ldlywt.note.utils.str
 import com.ldlywt.note.utils.toYYMMDD
-import com.ldlywt.note.utils.toast
 import com.moriafly.salt.ui.Item
 import com.moriafly.salt.ui.ItemArrowType
 import com.moriafly.salt.ui.ItemSwitcher
@@ -76,8 +74,8 @@ import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.UnstableSaltApi
 import com.moriafly.salt.ui.popup.PopupMenuItem
 import com.moriafly.salt.ui.popup.rememberPopupState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 
 @Composable
@@ -115,6 +113,7 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
 
     val context = LocalContext.current
     val themeModePopupMenuState = rememberPopupState()
+    val languagePopupMenuState = rememberPopupState()
     val settingsViewModel = hiltViewModel<SettingsViewModel>()
     val biometricAuthState by settingsViewModel.biometricAuthState.collectAsState()
     val dynamicColor by SettingsPreferences.dynamicColor.collectAsState(false)
@@ -187,23 +186,54 @@ fun SettingsPreferenceScreen(navController: NavHostController) {
 
                         val options =
                             SettingsPreferences.ThemeMode.entries.map { stringResource(id = it.resId) }
-                        var selectedIndex by remember {
-                            mutableIntStateOf(
-                                SettingsPreferences.ThemeMode.entries.indexOf(themeMode)
-                            )
-                        }
+                        val selectedIndex = SettingsPreferences.ThemeMode.entries.indexOf(themeMode)
 
                         options.forEachIndexed { index, label ->
                             PopupMenuItem(
                                 onClick = {
-                                    selectedIndex = index
                                     scope.launch {
                                         SettingsPreferences.changeThemeMode(SettingsPreferences.ThemeMode.entries[index])
                                     }
                                     themeModePopupMenuState.dismiss()
                                 },
-                                selected = selectedIndex == 0,
+                                selected = selectedIndex == index,
                                 text = label,
+                                iconColor = SaltTheme.colors.text
+                            )
+                        }
+                    }
+
+                    // 语言切换 Item
+                    val currentLocale = LanguageUtils.getAppLocale(context)
+                    val languageOptions = listOf(
+                        stringResource(R.string.language_chinese) to Locale.SIMPLIFIED_CHINESE,
+                        stringResource(R.string.language_english) to Locale.ENGLISH,
+                        stringResource(R.string.language_traditional_chinese) to Locale.TRADITIONAL_CHINESE
+                    )
+
+                    val currentLanguageName = when (currentLocale.language) {
+                        "zh" -> if (currentLocale.country == "TW" || currentLocale.country == "HK") stringResource(R.string.language_traditional_chinese) else stringResource(R.string.language_chinese)
+                        "en" -> stringResource(R.string.language_english)
+                        else -> stringResource(R.string.language_english)
+                    }
+
+                    ItemPopup(
+                        state = languagePopupMenuState,
+                        iconPainter = rememberVectorPainter(Icons.Outlined.Translate),
+                        iconColor = SaltTheme.colors.text,
+                        text = stringResource(R.string.language_switcher_text),
+                        selectedItem = currentLanguageName,
+                        popupWidth = 160
+                    ) {
+                        languageOptions.forEach { (name, locale) ->
+                            PopupMenuItem(
+                                onClick = {
+                                    LanguageUtils.setLanguage(context, locale)
+                                    languagePopupMenuState.dismiss()
+                                },
+                                selected = currentLocale.language == locale.language &&
+                                           (if (locale.language == "zh") currentLocale.country == locale.country else true),
+                                text = name,
                                 iconColor = SaltTheme.colors.text
                             )
                         }
