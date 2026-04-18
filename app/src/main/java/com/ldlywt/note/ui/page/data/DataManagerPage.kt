@@ -209,31 +209,6 @@ fun DataManagerPage(
                 )
             }
         }
-        RoundedColumn {
-            val localBackUri = SharedPreferencesUtils.localBackupUri.collectAsState("")
-            ItemSwitcher(
-                state = autoBackSwitchState.value,
-                onChange = {
-                    if (localBackUri.value.isNullOrEmpty()) {
-                        showChoseFolderDialog = true
-                    } else {
-                        val isChecked = autoBackSwitchState.value
-                        scope.launch {
-                            if (isChecked) {
-                                SharedPreferencesUtils.updateLocalAutoBackup(false)
-                                SharedPreferencesUtils.updateLocalBackUri(null)
-                            } else {
-                                SharedPreferencesUtils.updateLocalAutoBackup(true)
-                            }
-                        }
-                    }
-                },
-                iconColor = SaltTheme.colors.highlight,
-                text = R.string.title_local_auto_backup.str
-            )
-        }
-
-
         if (webInputDialog) {
             AccountInputDialog(
                 onDismissRequest = {
