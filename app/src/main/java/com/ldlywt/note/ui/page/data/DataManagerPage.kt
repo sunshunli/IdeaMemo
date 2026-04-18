@@ -1,9 +1,8 @@
 package com.ldlywt.note.ui.page.data
 
-import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,19 +14,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.FormatColorText
-import androidx.compose.material.icons.outlined.PrivacyTip
-import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,17 +39,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.ldlywt.note.App
 import com.ldlywt.note.R
 import com.ldlywt.note.backup.model.DavData
-import com.ldlywt.note.component.ConfirmDialog
 import com.ldlywt.note.component.LoadingComponent
 import com.ldlywt.note.component.RYDialog
 import com.ldlywt.note.ui.page.LocalMemosState
-import com.ldlywt.note.ui.page.router.Screen
 import com.ldlywt.note.ui.page.router.debouncedPopBackStack
 import com.ldlywt.note.ui.page.settings.SettingsBean
 import com.ldlywt.note.utils.BackUp
@@ -63,9 +54,7 @@ import com.ldlywt.note.utils.ExportHtmlContract
 import com.ldlywt.note.utils.ExportMarkDownContract
 import com.ldlywt.note.utils.ExportTextContract
 import com.ldlywt.note.utils.ImportHtmlZipContract
-import com.ldlywt.note.utils.RestoreNotesContract
 import com.ldlywt.note.utils.SharedPreferencesUtils
-import com.ldlywt.note.utils.backUpFileName
 import com.ldlywt.note.utils.lunchIo
 import com.ldlywt.note.utils.lunchMain
 import com.ldlywt.note.utils.str
@@ -97,21 +86,22 @@ fun DataManagerPage(
     var showChoseFolderDialog by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var isSuccess by remember { mutableStateOf(false) }
-    var isShowRestartDialog by remember { mutableStateOf(false) }
     val webDavList = remember { mutableListOf<DavData>() }
     var openBottomSheet by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current as AppCompatActivity
     var webInputDialog: Boolean by remember { mutableStateOf(false) }
     val autoBackSwitchState = SharedPreferencesUtils.localAutoBackup.collectAsState(false)
     val jianGuoCloudSwitchState = SharedPreferencesUtils.davLoginSuccess.collectAsState(false)
-    val isLogin = viewModel.isLogin
 
     fun exportToWebdav() {
         lunchMain {
             isLoading = true
-            val resultStr = viewModel.exportToWebdav(context)
+            val resultStr = viewModel.exportToWebdav(context, noteState.notes)
             isLoading = false
-            isSuccess = true
+            isSuccess = resultStr.startsWith("Success")
+            if (!isSuccess) {
+                toast(resultStr)
+            }
         }
     }
 
@@ -165,34 +155,6 @@ fun DataManagerPage(
             }
         }
 
-    // Create an ActivityResultLauncher
-    val encryptedExportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument()
-    ) { uri ->
-        if (uri != null) {
-            scope.launch {
-                isLoading = true
-                withContext(Dispatchers.IO) {
-                    BackUp.exportEncrypted(context, uri)
-                }
-                isLoading = false
-                isSuccess = true
-            }
-        }
-    }
-
-    val restoreEncryptFromSdLauncher =
-        rememberLauncherForActivityResult(RestoreNotesContract) { uri ->
-            if (uri == null) return@rememberLauncherForActivityResult
-            lunchMain {
-                isLoading = true
-                BackUp.restoreFromEncryptedZip(App.instance, uri, true)
-                isLoading = false
-                isSuccess = true
-                isShowRestartDialog = true
-            }
-        }
-
     val importHtmlZipLauncher = rememberLauncherForActivityResult(ImportHtmlZipContract) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         lunchMain {
@@ -209,12 +171,6 @@ fun DataManagerPage(
     }
 
     val localDataList = listOf(
-        SettingsBean(R.string.data_backup, Icons.Outlined.PrivacyTip) {
-            encryptedExportLauncher.launch(backUpFileName)
-        },
-        SettingsBean(R.string.data_restore, Icons.Outlined.Restore) {
-            restoreEncryptFromSdLauncher.launch(null)
-        },
         SettingsBean(R.string.txt_export, Icons.Outlined.TextFields) {
             exportTxtLauncher.launch(null)
         },
@@ -330,23 +286,6 @@ fun DataManagerPage(
             showChoseFolderDialog = false
         })
 
-    ConfirmDialog(
-        isShowRestartDialog,
-        title = R.string.restart.str,
-        content = R.string.app_restored.str,
-        onDismissRequest = {
-            isShowRestartDialog = false
-        },
-        onConfirmRequest = {
-            isShowRestartDialog = false
-            val packageManager = context.packageManager
-            val intent = packageManager.getLaunchIntentForPackage(context.packageName)
-            val componentName = intent!!.component
-            val mainIntent = Intent.makeRestartActivityTask(componentName)
-            context.startActivity(mainIntent)
-            Runtime.getRuntime().exit(0)
-        })
-
     WebRestoreBottomSheet(show = openBottomSheet, list = webDavList, onDismissRequest = {
         openBottomSheet = false
     }, onConfirmRequest = { davData ->
@@ -355,15 +294,15 @@ fun DataManagerPage(
             isLoading = true
             val resultPath = viewModel.downloadFileByPath(davData)
             if (!resultPath.isNullOrEmpty()) {
-                val uri = FileProvider.getUriForFile(
-                    context,
-                    "com.ldlywt.note.provider",
-                    File(resultPath)
-                )
-                BackUp.restoreFromEncryptedZip(App.instance, uri, true)
+                val uri = Uri.fromFile(File(resultPath))
+                val result = BackUp.importFromHtmlZip(context, uri)
                 isLoading = false
-                isSuccess = true
-                isShowRestartDialog = true
+                result.onSuccess { count ->
+                    isSuccess = true
+                }.onFailure { e ->
+                    isSuccess = false
+                    Toast.makeText(context, "还原失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             } else {
                 isLoading = false
                 isSuccess = false
@@ -491,7 +430,9 @@ fun AccountInputDialog(
         }
         ItemOutHalfSpacer()
         com.moriafly.salt.ui.TextButton(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             onClick = {
                 scope.launch {
                     SharedPreferencesUtils.updateDavServerUrl(serverUrl)

@@ -52,6 +52,7 @@ import com.ldlywt.note.ui.page.LocalMemosViewModel
 import com.ldlywt.note.utils.lunchIo
 import com.ldlywt.note.utils.str
 import com.moriafly.salt.ui.SaltTheme
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -96,6 +97,9 @@ fun CalenderPage(navController: NavHostController) {
     ) {
         IndexTopBar(currentLocalDate, navigateToToday = {
             currentLocalDate = LocalDate.now()
+            scope.launch {
+                calendarState.animateScrollToMonth(YearMonth.now())
+            }
         })
         LazyColumn {
             stickyHeader {

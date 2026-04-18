@@ -1,18 +1,16 @@
 package com.ldlywt.note.ui.page.data
 
 import android.content.Context
-import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
 import com.ldlywt.note.App
 import com.ldlywt.note.backup.SyncManager
 import com.ldlywt.note.backup.model.DavData
 import com.ldlywt.note.bean.Note
+import com.ldlywt.note.bean.NoteShowBean
 import com.ldlywt.note.db.repo.TagNoteRepo
 import com.ldlywt.note.getAppName
 import com.ldlywt.note.utils.BackUp
-import com.ldlywt.note.utils.SharedPreferencesUtils
 import com.ldlywt.note.utils.backUpFileName
 import com.ldlywt.note.utils.withIO
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,36 +21,61 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class DataManagerViewModel @Inject constructor(private val tagNoteRepo: TagNoteRepo, private val syncManager: SyncManager) : ViewModel() {
+class DataManagerViewModel @Inject constructor(
+    private val tagNoteRepo: TagNoteRepo,
+    private val syncManager: SyncManager
+) : ViewModel() {
 
     suspend fun restoreForWebdav(): List<DavData> = withIO {
-        val dataList = syncManager.listAllFile(getAppName() + "/").filterNotNull().filter { it.name.endsWith(".zip") }.sortedByDescending { it.name }
+        val dataList = syncManager.listAllFile(getAppName() + "/")
+            .filterNotNull()
+            .filter { it.name.endsWith(".zip") }
+            .sortedByDescending { it.name }
         dataList
     }
 
     suspend fun downloadFileByPath(davData: DavData): String? = withIO {
-        syncManager.downloadFileByPath(davData.path.substringAfterLast("/dav/"), App.instance.cacheDir.absolutePath)
+        val fileName = davData.name
+        val destFile = File(App.instance.filesDir, "backup/$fileName")
+        destFile.parentFile?.mkdirs()
+        val result = syncManager.downloadFileByPath(
+            davData.path.substringAfterLast("/dav/"),
+            destFile.parentFile!!.absolutePath
+        )
+        if (result != null) destFile.absolutePath else null
     }
 
 
-    val isLogin = SharedPreferencesUtils.davLoginSuccess.asLiveData().value ?: false
-
-
-    suspend fun exportToWebdav(context: Context): String = withIO {
-        val (filename, file, _) = generateZipFile(context, backUpFileName)
-        val resultStr = syncManager.uploadFile(filename, getAppName(), file)
+    suspend fun exportToWebdav(context: Context, notes: List<NoteShowBean>): String = withIO {
+        val file = generateZipFile(context, backUpFileName, notes)
+        // 2. 上传到 WebDAV
+        val resultStr = syncManager.uploadFile(generateBackupFileName(), getAppName(), file)
+        // 3. 上传成功或失败后，可以根据需要决定是否删除私有目录文件
+        // 这里的逻辑是保留在私有目录，或者你可以选择删除
         if (resultStr.startsWith("Success")) {
-            File(filename).delete()
+            file.delete()
         }
         resultStr
     }
 
-    private suspend fun generateZipFile(context: Context, fileName: String): Triple<String, File, Uri> = withContext(Dispatchers.IO) {
+    fun generateBackupFileName(): String {
+        val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHH")
+        val currentTime = java.time.LocalDateTime.now()
+        return "IdeaMemoHtml${dateFormatter.format(currentTime)}.zip"
+    }
+
+    private suspend fun generateZipFile(
+        context: Context,
+        fileName: String,
+        notes: List<NoteShowBean>
+    ): File = withContext(Dispatchers.IO) {
         val file = File(context.cacheDir, fileName)
         val uri = FileProvider.getUriForFile(context, "com.ldlywt.note.provider", file)
-        val fileName = BackUp.exportEncrypted(context, uri)
-        Triple(fileName, file, uri)
+        // 1. 先导出到私有目录
+        BackUp.exportHtmlZip(notes, uri)
+        file
     }
+
 
     suspend fun fixTag() = withContext(Dispatchers.IO) {
         val dataList: List<Note> = tagNoteRepo.queryAllNoteList()
@@ -62,9 +85,5 @@ class DataManagerViewModel @Inject constructor(private val tagNoteRepo: TagNoteR
             tag.count = count
             tagNoteRepo.updateTag(tag)
         }
-    }
-
-    suspend fun checkConnection(url: String, account: String, pwd: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
-        syncManager.checkConnection(url, account, pwd)
     }
 }

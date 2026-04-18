@@ -31,8 +31,8 @@
     <string name="json_export">Json 导出</string>
     <string name="txt_export">Txt 导出</string>
     <string name="mk_export">MarkDown 导出</string>
-    <string name="html_export">导出为网页</string>
-    <string name="html_import">Flomo导入</string>
+    <string name="html_export">导出(可电脑上使用网页打开)</string>
+    <string name="html_import">导入(支持Flomo)</string>
     <string name="webdav_backup">备份</string>
     <string name="webdav_restore">还原</string>
     <string name="tag_fix">标签修正</string>

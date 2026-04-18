@@ -9,6 +9,7 @@ import com.ldlywt.note.db.repo.TagNoteRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.util.*
 import javax.inject.Inject
@@ -27,9 +28,10 @@ class ExploreViewModel @Inject constructor(
     }
 
     private fun initDailyNotes() {
-        viewModelScope.launch(Dispatchers.IO) {
-            // 只在第一次加载时获取，不监听流
-            val allNotes = tagNoteRepo.queryAllNoteList()
+        viewModelScope.launch {
+            val allNotes = withContext(Dispatchers.IO) {
+                tagNoteRepo.queryAllNoteList()
+            }
             if (allNotes.isNotEmpty()) {
                 val seed = LocalDate.now().toEpochDay()
                 val random = Random(seed)

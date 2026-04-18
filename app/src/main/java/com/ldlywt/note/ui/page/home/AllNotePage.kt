@@ -1,5 +1,6 @@
 package com.ldlywt.note.ui.page.home
 
+import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AvTimer
@@ -62,6 +64,8 @@ import com.ldlywt.note.utils.SharedPreferencesUtils
 import com.ldlywt.note.utils.lunchMain
 import com.ldlywt.note.utils.str
 import com.moriafly.salt.ui.SaltTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -86,7 +90,7 @@ fun AllNotesPage(
     // to counter LazyColumn's attempts to maintain scroll position by key.
     LaunchedEffect(sortTime, noteState.notes) {
         if (lastScrolledSortTime != sortTime) {
-            listState.scrollToItem(0)
+            scrollToTop(coroutineScope, listState)
             if (noteState.notes.isNotEmpty()) {
                 lastScrolledSortTime = sortTime
             }
@@ -103,9 +107,7 @@ fun AllNotesPage(
             Toolbar(navController, dateRangeBlock = {
                 showDateRangePicker = true
             }, onSortChanged = {
-                coroutineScope.launch {
-                    listState.animateScrollToItem(0)
-                }
+                scrollToTop(coroutineScope, listState)
             })
         },
         floatingActionButton = {
@@ -159,14 +161,12 @@ fun AllNotesPage(
                 isShow = showInputDialog,
                 parentNote = parentNoteForComment,
                 modifier =
-                Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+                    Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
             ) {
                 hideBottomNavBar.invoke(false)
                 showInputDialog = false
                 parentNoteForComment = null
-                coroutineScope.launch {
-                    listState.animateScrollToItem(0)
-                }
+                scrollToTop(coroutineScope, listState)
             }
         }
     }
@@ -195,6 +195,16 @@ fun AllNotesPage(
         )
     }
 
+}
+
+private fun scrollToTop(
+    coroutineScope: CoroutineScope,
+    listState: LazyListState
+) {
+    coroutineScope.launch {
+        delay(200)
+        listState.scrollToItem(0)
+    }
 }
 
 @Composable
