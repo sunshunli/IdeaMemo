@@ -1,12 +1,19 @@
 package com.ldlywt.note.ui.page.home
 
-import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,6 +21,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AvTimer
 import androidx.compose.material.icons.outlined.FilterList
@@ -21,6 +32,8 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
@@ -44,11 +57,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.ldlywt.note.R
 import com.ldlywt.note.bean.NoteShowBean
 import com.ldlywt.note.component.NoteCard
@@ -68,6 +86,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 fun AllNotesPage(
@@ -82,12 +101,11 @@ fun AllNotesPage(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
+    var isGalleryMode by rememberSaveable { mutableStateOf(false) }
+
     val sortTime by SharedPreferencesUtils.sortTime.collectAsState(SortTime.UPDATE_TIME_DESC)
     var lastScrolledSortTime by rememberSaveable { mutableStateOf<SortTime?>(null) }
 
-    // Ensure list stays at the top when sorting changes.
-    // We trigger this when sortTime changes OR when notes update, 
-    // to counter LazyColumn's attempts to maintain scroll position by key.
     LaunchedEffect(sortTime, noteState.notes) {
         if (lastScrolledSortTime != sortTime) {
             scrollToTop(coroutineScope, listState)
@@ -102,7 +120,24 @@ fun AllNotesPage(
     }
 
     RYScaffold(
-        title = R.string.all_note.str, navController = null,
+        navController = null,
+        titleContent = {
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                HomeTabTitle(
+                    selected = !isGalleryMode,
+                    text = "Notes",
+                    onClick = { isGalleryMode = false }
+                )
+                HomeTabTitle(
+                    selected = isGalleryMode,
+                    text = "Gallery",
+                    onClick = { isGalleryMode = true }
+                )
+            }
+        },
         actions = {
             Toolbar(navController, dateRangeBlock = {
                 showDateRangePicker = true
@@ -123,53 +158,75 @@ fun AllNotesPage(
                 }
             }
         },
-    ) {
+        content = {
 
-        Box {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(
-                    count = noteState.notes.size,
-                    key = { noteState.notes[it].note.noteId }
-                ) { index ->
-                    NoteCard(
-                        noteShowBean = noteState.notes[index],
-                        navHostController = navController,
-                        onCommentClick = {
-                            parentNoteForComment = it
-                            hideBottomNavBar.invoke(true)
-                            showInputDialog = true
+            Box {
+                if (isGalleryMode) {
+                    val galleryNotes = remember(noteState.notes) {
+                        noteState.notes.filter { it.note.attachments.isNotEmpty() }
+                    }
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(2),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        items(galleryNotes) { noteBean ->
+                            GalleryItem(noteBean) {
+                                navController.navigate(Screen.MemoPreview(noteBean.note.noteId))
+                            }
                         }
-                    )
+                        item {
+                            Spacer(modifier = Modifier.height(100.dp))
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(
+                            count = noteState.notes.size,
+                            key = { noteState.notes[it].note.noteId }
+                        ) { index ->
+                            NoteCard(
+                                noteShowBean = noteState.notes[index],
+                                navHostController = navController,
+                                onCommentClick = {
+                                    parentNoteForComment = it
+                                    hideBottomNavBar.invoke(true)
+                                    showInputDialog = true
+                                }
+                            )
+                        }
+                        item {
+                            Spacer(modifier = Modifier.height(100.dp))
+                        }
+                    }
                 }
-                item {
-                    Spacer(modifier = Modifier.height(100.dp))
-                }
-            }
 
-            if (showInputDialog) {
-                BackHandler(enabled = true) {
+                if (showInputDialog) {
+                    BackHandler(enabled = true) {
+                        hideBottomNavBar.invoke(false)
+                        showInputDialog = false
+                        parentNoteForComment = null
+                    }
+                }
+
+                ChatInputDialog(
+                    isShow = showInputDialog,
+                    parentNote = parentNoteForComment,
+                    modifier =
+                    Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+                ) {
                     hideBottomNavBar.invoke(false)
                     showInputDialog = false
                     parentNoteForComment = null
+                    scrollToTop(coroutineScope, listState)
                 }
             }
-
-            ChatInputDialog(
-                isShow = showInputDialog,
-                parentNote = parentNoteForComment,
-                modifier =
-                    Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-            ) {
-                hideBottomNavBar.invoke(false)
-                showInputDialog = false
-                parentNoteForComment = null
-                scrollToTop(coroutineScope, listState)
-            }
         }
-    }
+    )
 
     if (showWarnDialog) {
         FirstTimeWarmDialog {
@@ -195,6 +252,77 @@ fun AllNotesPage(
         )
     }
 
+}
+
+@Composable
+fun HomeTabTitle(
+    selected: Boolean,
+    text: String,
+    onClick: () -> Unit
+) {
+    val color by animateColorAsState(
+        targetValue = if (selected) SaltTheme.colors.text else SaltTheme.colors.subText,
+        animationSpec = tween(durationMillis = 300), label = "colorAnim"
+    )
+    val fontSize by animateFloatAsState(
+        targetValue = if (selected) 24f else 18f,
+        animationSpec = tween(durationMillis = 300), label = "fontSizeAnim"
+    )
+
+    Box(
+        modifier = Modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onClick() }
+            .padding(vertical = 4.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Text(
+            text = text,
+            style = SaltTheme.textStyles.main.copy(
+                fontSize = fontSize.sp,
+                color = color,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+            )
+        )
+    }
+}
+
+@Composable
+fun GalleryItem(noteBean: NoteShowBean, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .padding(6.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = SaltTheme.colors.subBackground),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
+    ) {
+        Column {
+            val firstImage = noteBean.note.attachments.firstOrNull()
+            if (firstImage != null) {
+                AsyncImage(
+                    model = File(firstImage.path),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                )
+            }
+            Text(
+                text = noteBean.note.content,
+                style = SaltTheme.textStyles.main.copy(
+                    fontSize = 14.sp,
+                    lineHeight = 18.sp
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(10.dp)
+            )
+        }
+    }
 }
 
 private fun scrollToTop(

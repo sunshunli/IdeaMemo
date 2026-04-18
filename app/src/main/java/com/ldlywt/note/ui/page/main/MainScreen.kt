@@ -15,9 +15,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.ldlywt.note.ui.page.home.AllNotesPage
 import com.ldlywt.note.ui.page.home.CalenderPage
@@ -78,7 +80,6 @@ fun MainScreen(navController: NavHostController) {
                     .weight(1f)
                     .run {
                         if (!hideNavBar) {
-                            // 关键：消费掉底部缩进，防止内部 RYScaffold 再次产生 padding
                             this.consumeWindowInsets(NavigationBarDefaults.windowInsets)
                         } else this
                     }
@@ -142,9 +143,14 @@ private fun AdaptiveNavigationBar(
             }
         }
     } else {
+        val navigationBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        // 判断是否为虚拟导航栏（通常高度 > 0）
+        val isSystemBarVisible = navigationBarHeight > 0.dp
+        
         NavigationBar(
-            modifier = modifier,
-            containerColor = SaltTheme.colors.subBackground
+            modifier = modifier.height(if (isSystemBarVisible) 80.dp else 64.dp),
+            containerColor = SaltTheme.colors.subBackground,
+            windowInsets = WindowInsets.navigationBars
         ) {
             destinations.forEachIndexed { index, destination ->
                 NavigationBarItem(
@@ -153,7 +159,21 @@ private fun AdaptiveNavigationBar(
                         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                         onNavigateToDestination(index)
                     },
-                    icon = destination.icon,
+                    icon = {
+                        // 如果是手势导航（全面屏），增加一些间距，
+                        // 虚拟导航栏则依靠 NavigationBar 默认的居中逻辑
+                        val iconModifier = if (!isSystemBarVisible) Modifier.padding(top = 8.dp) else Modifier
+                        Box(modifier = iconModifier) {
+                            destination.icon()
+                        }
+                    },
+                    label = null,
+                    alwaysShowLabel = false,
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = SaltTheme.colors.highlight,
+                        unselectedIconColor = SaltTheme.colors.text.copy(alpha = 0.6f),
+                        indicatorColor = Color.Transparent
+                    )
                 )
             }
         }

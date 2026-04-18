@@ -2,7 +2,6 @@ package com.ldlywt.note.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.ArrowBackIosNew
@@ -28,26 +27,30 @@ import com.moriafly.salt.ui.SaltTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RYScaffold(
-    title: String?,
-    navController: NavHostController?,
+    title: String? = null,
+    navController: NavHostController? = null,
     containerColor: Color = SaltTheme.colors.background,
     actions: @Composable() (RowScope.() -> Unit)? = null,
     bottomBar: @Composable() (() -> Unit)? = null,
     floatingActionButton: @Composable() (() -> Unit)? = null,
     snackBarHostState: SnackbarHostState? = null,
+    titleContent: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit = {},
 ) {
     Scaffold(
         containerColor = containerColor,
         topBar = {
-            if (title != null) {
+            if (title != null || titleContent != null) {
                 TopAppBar(
-                    // M3 TopAppBar 默认通过 windowInsets 处理状态栏，无需手动添加 statusBarsPadding()
                     title = {
-                        Text(
-                            text = title,
-                            style = SaltTheme.textStyles.main.copy(fontSize = 24.sp)
-                        )
+                        if (titleContent != null) {
+                            titleContent()
+                        } else if (title != null) {
+                            Text(
+                                text = title,
+                                style = SaltTheme.textStyles.main.copy(fontSize = 24.sp)
+                            )
+                        }
                     },
                     navigationIcon = {
                         if (navController != null) {
@@ -58,7 +61,6 @@ fun RYScaffold(
                                     tint = SaltTheme.colors.text,
                                 )
                             }
-
                         }
                     },
                     actions = { actions?.invoke(this) },
@@ -69,7 +71,6 @@ fun RYScaffold(
             }
         },
         content = { paddingValues ->
-            // 使用 Scaffold 提供的 paddingValues 统一处理边距
             Box(modifier = Modifier.padding(paddingValues)) {
                 content()
             }
