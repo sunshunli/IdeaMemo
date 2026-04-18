@@ -32,7 +32,7 @@
     <string name="txt_export">Export Txt</string>
     <string name="mk_export">Export MarkDown</string>
     <string name="html_export">Export HTML</string>
-    <string name="html_import">导入网页</string>
+    <string name="html_import">Import WebPage</string>
     <string name="webdav_backup">Backup</string>
     <string name="webdav_restore">Restore</string>
     <string name="tag_fix">Fix Tag</string>
@@ -126,4 +126,15 @@
     <string name="feedback_lark" >Lark Questionnaire</string>
     <string name="comment">Comment</string>
     <string name="xiaohongshu">RedBook</string>
+
+    <string name="welcome_pure_title">Pure and Simple</string>
+    <string name="welcome_pure_desc">No ads, no bloat, and even no permissions required.</string>
+    <string name="welcome_card_title">Inspiration Cards</string>
+    <string name="welcome_card_desc">Record your thoughts anytime, support #Tag classification, and export to view as a web page on PC.</string>
+    <string name="welcome_privacy_title">Privacy Assured</string>
+    <string name="welcome_privacy_desc">Open source, no servers, local data storage, and support for WebDAV sync.</string>
+    <string name="usage_title">Usage</string>
+
+    <string name="donate_intro_title">IdeaMemo is a project I developed in my spare time, open source and always free.</string>
+    <string name="donate_intro_desc">I often stay up late after work to fix bugs. Sponsoring a cup of iced Americano coffee will urge me to fix bugs faster!</string>
 </resources>

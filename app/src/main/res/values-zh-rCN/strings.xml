@@ -1,11 +1,11 @@
 <resources>
 
-    <string name="all_note">Note</string>
+    <string name="all_note">笔记</string>
     <string name="cancel">取消</string>
     <string name="explore">探索</string>
     <string name="search_hint">搜索</string>
     <string name="welcome">欢迎使用</string>
-    <string name="agree">同意</string>
+    <string name="agree">同意并继续</string>
     <string name="ok">确定</string>
     <string name="app_restored">应用数据已经恢复，您需要重启应用。</string>
     <string name="restart">需要重启</string>
@@ -44,8 +44,8 @@
     <string name="five_star_review">好评鼓励</string>
     <string name="feedback_email">邮件反馈</string>
     <string name="share_app_content">快速记录你的灵感.下载地址: https://play.google.com/store/apps/details?id=com.ldlywt.note</string>
-    <string name="select_mail_tips">Select Email</string>
-    <string name="no_mail_app_tips">No Email App</string>
+    <string name="select_mail_tips">选择邮件客户端</string>
+    <string name="no_mail_app_tips">未找到邮件应用</string>
     <string name="notes_will_be">每天将备份到你手机的内部存储中。\n\n如果你启用了节电模式，此功能可能无法正常工作。</string>
     <string name="choose_folder">选择文件夹</string>
     <string name="dyas">天数</string>
@@ -58,7 +58,7 @@
     <string name="back">返回</string>
     <string name="password">密码</string>
     <string name="clear">清除</string>
-    <string name="paste">复制</string>
+    <string name="paste">粘贴</string>
     <string name="server_url">服务器地址</string>
     <string name="username">用户名</string>
     <string name="local_data_manager">数据管理</string>
@@ -71,8 +71,8 @@
     <string name="choose">选择</string>
     <string name="other">其他信息</string>
     <string name="close">关闭</string>
-    <string name="add_image">add image</string>
-    <string name="take_photo">take photo</string>
+    <string name="add_image">添加图片</string>
+    <string name="take_photo">拍照</string>
     <string name="submit">提交</string>
     <string name="export_data">数据导出(不加密)</string>
     <string name="export_restore_no_encr">数据还原(不加密)</string>
@@ -123,4 +123,15 @@
     <string name="feedback_lark">飞书问卷</string>
     <string name="comment">批注</string>
     <string name="xiaohongshu">小红书反馈</string>
+
+    <string name="welcome_pure_title">纯粹简洁</string>
+    <string name="welcome_pure_desc">0广告，0冗余，甚至连权限都不用开。</string>
+    <string name="welcome_card_title">灵感卡片</string>
+    <string name="welcome_card_desc">随手记下碎碎念，支持 #标签 分类，可以导出在电脑上用网页的形式打开。</string>
+    <string name="welcome_privacy_title">隐私无忧</string>
+    <string name="welcome_privacy_desc">代码开源，没有服务器，数据存本地，支持 WebDAV 同步。</string>
+    <string name="usage_title">使用方式</string>
+
+    <string name="donate_intro_title">IdeaMemo是我业余时间肝出来的项目，开源并且一直免费。</string>
+    <string name="donate_intro_desc">开发者经常下班熬夜修bug，赞助一杯冰美式咖啡，催促开发者更快修Bug。</string>
 </resources>
